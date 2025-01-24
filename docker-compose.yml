@@ -1,0 +1,17 @@
+services:
+  db:
+    image: postgres:15
+    container_name: auth_service_db
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: auth_service
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./migrations:/migrations # Mount the migrations folder
+
+volumes:
+  db_data:
