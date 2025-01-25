@@ -8,6 +8,7 @@ import (
 	"wall-e-go/auth-service/internal/middleware"
 	"wall-e-go/auth-service/internal/repository"
 	"wall-e-go/auth-service/internal/services"
+	jwt "wall-e-go/auth-service/internal/util"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -33,7 +34,7 @@ func main() {
 	// Set up repositories services and handlers
 
 	userRepo := repository.NewUserRepository(db)
-	authService := services.NewAuthService(userRepo)
+	authService := services.NewAuthService(*userRepo, jwt.JWTUtil{})
 	authHandler := handlers.NewAuthHandler(authService)
 
 	router := gin.Default()
