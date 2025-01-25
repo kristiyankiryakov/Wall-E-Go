@@ -21,12 +21,15 @@ func (r *UserRepository) CreateUser(user models.User) error {
 	return err
 }
 
-func (r *UserRepository) GetUserByUsername(username string) (models.User, error) {
-	user := models.User{}
+func (r *UserRepository) GetUserByUsername(username string) (*models.User, error) {
+	user := &models.User{}
 
 	query := `SELECT id, username, password, created_at FROM users WHERE username=$1`
 
-	err := r.DB.QueryRow(query, username).Scan(&user.ID, &user.Password, &user.Username, &user.CreatedAt)
+	err := r.DB.QueryRow(query, username).Scan(&user.ID, &user.Username, &user.Password, &user.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
 
 	return user, err
 }

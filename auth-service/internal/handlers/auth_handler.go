@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"wall-e-go/auth-service/internal/models"
 	"wall-e-go/auth-service/internal/services"
+	errors "wall-e-go/common"
 
 	"github.com/gin-gonic/gin"
 )
@@ -20,13 +21,14 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	var user models.User
 
 	if err := c.ShouldBindBodyWithJSON(&user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+		c.Error(errors.WrapError(errors.ErrBadRequest, "Invalid input data"))
 		return
 	}
 
 	err := h.AuthService.RegisterUser(user)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		// Pass the error to the middleware
+		c.Error(err)
 		return
 	}
 

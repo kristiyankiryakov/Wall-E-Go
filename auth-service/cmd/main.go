@@ -5,6 +5,7 @@ import (
 	"log"
 	"wall-e-go/auth-service/config"
 	"wall-e-go/auth-service/internal/handlers"
+	"wall-e-go/auth-service/internal/middleware"
 	"wall-e-go/auth-service/internal/repository"
 	"wall-e-go/auth-service/internal/services"
 
@@ -32,6 +33,10 @@ func main() {
 	authHandler := handlers.NewAuthHandler(authService)
 
 	router := gin.Default()
+
+	// Use error handler middleware
+	router.Use(middleware.ErrorHandler())
+
 	router.POST("/register", authHandler.Register)
 
 	// Start server
