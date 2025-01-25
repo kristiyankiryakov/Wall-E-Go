@@ -7,6 +7,7 @@ import (
 	"wall-e-go/auth-service/internal/handlers"
 	"wall-e-go/auth-service/internal/middleware"
 	"wall-e-go/auth-service/internal/repository"
+	router "wall-e-go/auth-service/internal/routers"
 	"wall-e-go/auth-service/internal/services"
 	jwt "wall-e-go/auth-service/internal/util"
 
@@ -15,36 +16,61 @@ import (
 	_ "github.com/lib/pq"
 )
 
+type App struct {
+	Config *config.Config
+	DB     *sql.DB
+	Router *gin.Engine
+}
+
 func main() {
-	// Load config
+
+	app := InitializeApp()
+
+	// Start server
+	log.Println("Starting server on :8080...")
+	app.Router.Run(":8080")
+}
+
+func InitializeApp() *App {
 	cfg := config.LoadConfig()
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
 
-	// Connect to database
+	db := initializeDatabase(cfg)
+
+	r := initializeRouter(db)
+
+	return &App{
+		Config: cfg,
+		DB:     db,
+		Router: r,
+	}
+}
+
+func initializeDatabase(cfg *config.Config) *sql.DB {
 	dsn := "host=" + cfg.DBHost + " user=" + cfg.DBUser + " password=" + cfg.DBPassword + " dbname=" + cfg.DBName + " sslmode=disable"
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
-		log.Fatal("Failed to connect to database", err)
+		log.Fatalf("Failed to connect to database: %v", err)
 	}
-	defer db.Close()
+	return db
+}
 
-	// Set up repositories services and handlers
+// sets up the router and handlers
 
+func initializeRouter(db *sql.DB) *gin.Engine {
 	userRepo := repository.NewUserRepository(db)
 	authService := services.NewAuthService(*userRepo, jwt.JWTUtil{})
 	authHandler := handlers.NewAuthHandler(authService)
 
-	router := gin.Default()
+	r := gin.Default()
 
-	// Use error handler middleware
-	router.Use(middleware.ErrorHandler())
+	r.Use(middleware.ErrorHandler())
 
-	router.POST("/register", authHandler.Register)
+	routes := router.NewRouter(authHandler)
+	routes.RegisterRoutes(r)
 
-	// Start server
-	log.Println("Starting server on :8080...")
-	router.Run(":8080")
+	return r
 }
