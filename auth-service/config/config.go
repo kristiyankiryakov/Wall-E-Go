@@ -12,8 +12,8 @@ type Config struct {
 	DBPort     string
 }
 
-func LoadConfig() Config {
-	return Config{
+func LoadConfig() *Config {
+	return &Config{
 		DBUser:     getEnv("DB_USER", "user"),
 		DBPassword: getEnv("DB_PASSWORD", "password"),
 		DBName:     getEnv("DB_Name", "auth_service"),

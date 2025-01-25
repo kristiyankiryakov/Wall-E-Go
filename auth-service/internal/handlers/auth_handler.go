@@ -25,12 +25,12 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	err := h.AuthService.RegisterUser(user)
+	token, err := h.AuthService.RegisterUser(user)
 	if err != nil {
 		// Pass the error to the middleware
 		c.Error(err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "User registered successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "User registered successfully", "token": token})
 }
