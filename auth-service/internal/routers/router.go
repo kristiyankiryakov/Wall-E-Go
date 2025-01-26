@@ -16,4 +16,5 @@ func NewRouter(authHandler *handlers.AuthHandler) *Router {
 
 func (r *Router) RegisterRoutes(router *gin.Engine) {
 	router.POST("/register", r.AuthHandler.Register)
+	router.POST("/login", r.AuthHandler.Login)
 }

@@ -34,3 +34,20 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "User registered successfully", "token": token})
 }
+
+func (h *AuthHandler) Login(c *gin.Context) {
+	var user models.User
+
+	if err := c.ShouldBindBodyWithJSON(&user); err != nil {
+		c.Error(errors.WrapError(errors.ErrBadRequest, "Invalid input data"))
+		return
+	}
+
+	token, err := h.AuthService.Login(user)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Successful authentication", "token": token})
+}

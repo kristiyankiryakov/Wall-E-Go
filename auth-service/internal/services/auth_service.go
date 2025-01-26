@@ -1,7 +1,6 @@
 package services
 
 import (
-	"database/sql"
 	"wall-e-go/auth-service/internal/models"
 	"wall-e-go/auth-service/internal/repository"
 	errors "wall-e-go/common"
@@ -45,7 +44,7 @@ func (as AuthService) RegisterUser(newUser models.User) (string, error) {
 func (as AuthService) handleExistingUser(username string) error {
 	existingUser, err := as.UserRepository.GetUserByUsername(username)
 
-	if err != nil && err != sql.ErrNoRows {
+	if err != nil {
 		return errors.WrapError(errors.ErrInternal, "Error checking user existence")
 	}
 
@@ -80,5 +79,30 @@ func (as AuthService) generateToken(username string) (string, error) {
 	return token, nil
 }
 
-//TODO: add login functionality -> check credentials if good generate a token
+func (as AuthService) Login(credentials models.User) (string, error) {
+	existingUser, err := as.UserRepository.GetUserByUsername(credentials.Username)
+	if err != nil {
+		return "", errors.WrapError(errors.ErrInternal, "Error checking user existence")
+	}
+
+	if err := as.comparePasswords(existingUser.Password, credentials.Password); err != nil {
+		return "", err
+	}
+
+	token, err := as.generateToken(credentials.Username)
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
+}
+
+func (as AuthService) comparePasswords(hashedPassword, password string) error {
+	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+	if err != nil {
+		return errors.WrapError(errors.ErrBadRequest, "Credentials provided do not match our records")
+	}
+	return nil
+}
+
 // For Auth required services check how it's done - whether a common middleware is shared or each service implement's it's own
