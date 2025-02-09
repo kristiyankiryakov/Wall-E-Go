@@ -1,9 +1,9 @@
 package services
 
 import (
+	errors "wall-e-go/auth-service/internal/error"
 	"wall-e-go/auth-service/internal/models"
 	"wall-e-go/auth-service/internal/repository"
-	errors "wall-e-go/common"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -104,5 +104,3 @@ func (as AuthService) comparePasswords(hashedPassword, password string) error {
 	}
 	return nil
 }
-
-// For Auth required services check how it's done - whether a common middleware is shared or each service implement's it's own

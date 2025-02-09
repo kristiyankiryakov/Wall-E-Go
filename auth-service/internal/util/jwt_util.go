@@ -1,9 +1,9 @@
-package jwt
+package util
 
 import (
 	"os"
 	"time"
-	errors "wall-e-go/common"
+	errors "wall-e-go/auth-service/internal/error"
 
 	"github.com/golang-jwt/jwt/v5"
 )

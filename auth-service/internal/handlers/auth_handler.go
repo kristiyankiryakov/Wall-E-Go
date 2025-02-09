@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"net/http"
+	errors "wall-e-go/auth-service/internal/error"
 	"wall-e-go/auth-service/internal/models"
 	"wall-e-go/auth-service/internal/services"
-	errors "wall-e-go/common"
 
 	"github.com/gin-gonic/gin"
 )
