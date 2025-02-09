@@ -1,7 +1,7 @@
 package router
 
 import (
-	"wall-e-go/auth-service/internal/handlers"
+	"wall-e-go/internal/handlers"
 
 	"github.com/gin-gonic/gin"
 )

@@ -1,9 +1,9 @@
 package services
 
 import (
-	errors "wall-e-go/auth-service/internal/error"
-	"wall-e-go/auth-service/internal/models"
-	"wall-e-go/auth-service/internal/repository"
+	errors "wall-e-go/internal/error"
+	"wall-e-go/internal/models"
+	"wall-e-go/internal/repository"
 
 	"golang.org/x/crypto/bcrypt"
 )

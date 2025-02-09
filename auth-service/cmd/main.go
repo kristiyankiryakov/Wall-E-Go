@@ -3,13 +3,14 @@ package main
 import (
 	"database/sql"
 	"log"
-	"wall-e-go/auth-service/config"
-	"wall-e-go/auth-service/internal/handlers"
-	"wall-e-go/auth-service/internal/middleware"
-	"wall-e-go/auth-service/internal/repository"
-	router "wall-e-go/auth-service/internal/routers"
-	"wall-e-go/auth-service/internal/services"
-	jwt "wall-e-go/auth-service/internal/util"
+	"wall-e-go/config"
+	"wall-e-go/internal/handlers"
+	"wall-e-go/internal/middleware"
+	"wall-e-go/internal/repository"
+	router "wall-e-go/internal/routers"
+	"wall-e-go/internal/services"
+
+	"wall-e-go/internal/util"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -61,7 +62,7 @@ func initializeDatabase(cfg *config.Config) *sql.DB {
 
 func initializeRouter(db *sql.DB) *gin.Engine {
 	userRepo := repository.NewUserRepository(db)
-	authService := services.NewAuthService(*userRepo, jwt.JWTUtil{})
+	authService := services.NewAuthService(*userRepo, util.JWTUtil{})
 	authHandler := handlers.NewAuthHandler(authService)
 
 	r := gin.Default()

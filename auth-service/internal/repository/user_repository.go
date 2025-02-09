@@ -3,7 +3,7 @@ package repository
 import (
 	"database/sql"
 	"fmt"
-	"wall-e-go/auth-service/internal/models"
+	"wall-e-go/internal/models"
 )
 
 type UserRepository struct {

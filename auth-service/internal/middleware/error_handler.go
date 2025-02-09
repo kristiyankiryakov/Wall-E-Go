@@ -3,7 +3,7 @@ package middleware
 import (
 	"log"
 	"net/http"
-	errors "wall-e-go/auth-service/internal/error"
+	errors "wall-e-go/internal/error"
 
 	"github.com/gin-gonic/gin"
 )

@@ -3,7 +3,7 @@ package util
 import (
 	"os"
 	"time"
-	errors "wall-e-go/auth-service/internal/error"
+	errors "wall-e-go/internal/error"
 
 	"github.com/golang-jwt/jwt/v5"
 )
