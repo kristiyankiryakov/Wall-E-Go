@@ -1,17 +1,58 @@
 services:
-  db:
-    image: postgres:15
-    container_name: auth_service_db
+  auth:
+    depends_on:
+      - postgres
+    build:
+      context: ./auth-service
+      dockerfile: ./auth-service.dockerfile
     restart: always
+    ports:
+      - "50001:50001"
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      JWT_KEY: MIGbMBAGByqGSM49AgEGBSuBBAAjA4GGAAQAwczAzq0G4TRw8Qj69FRxnuV380IQ #should be hidden in prod!!!
+      DSN: "host=postgres port=5432 user=user password=password dbname=auth_service sslmode=disable timezone=UTC connect_timeout=5"
+    networks:
+      - myapp-network
+  broker:
+    build:
+      context: ./broker-service
+      dockerfile: ./broker-service.dockerfile
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - auth
+    environment:
+      - AUTH_HOST=auth:50051
+    deploy:
+      mode: replicated
+      replicas: 1
+    networks:
+      - myapp-network
+
+  postgres:
+    image: 'postgres:14.2'
+    ports:
+      - "5432:5432"
+    deploy:
+      mode: replicated
+      replicas: 1
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
       POSTGRES_DB: auth_service
-    ports:
-      - "5432:5432"
     volumes:
-      - db_data:/var/lib/postgresql/data
-      - ./migrations:/migrations # Mount the migrations folder
+      - ./db-data/postgres/:/var/lib/postgresql/data/
+      - ./migrations:/migrations #Mount migrations folder
+    networks:
+      - myapp-network
 
 volumes:
   db_data:
+
+networks:
+  myapp-network:
+    driver: bridge
