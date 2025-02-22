@@ -3,74 +3,86 @@ package main
 import (
 	"database/sql"
 	"log"
-	"wall-e-go/config"
-	"wall-e-go/internal/handlers"
-	"wall-e-go/internal/middleware"
-	"wall-e-go/internal/repository"
-	router "wall-e-go/internal/routers"
-	"wall-e-go/internal/services"
+	"net"
+	"os"
+	"time"
+	"wall-e-go/internal/data"
+	"wall-e-go/internal/jwt"
+	"wall-e-go/internal/service"
+	pb "wall-e-go/proto"
 
-	"wall-e-go/internal/util"
-
-	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
-	_ "github.com/lib/pq"
+	_ "github.com/jackc/pgconn"
+	_ "github.com/jackc/pgx/v4"
+	_ "github.com/jackc/pgx/v4/stdlib"
+	"google.golang.org/grpc"
 )
 
-type App struct {
-	Config *config.Config
-	DB     *sql.DB
-	Router *gin.Engine
-}
+const WEB_PORT = "50001"
 
 func main() {
+	log.Printf("Starting server on :%s...", WEB_PORT)
 
-	app := InitializeApp()
+	dbConn := connectToDB()
+	if dbConn == nil {
+		log.Panic("Can't connect to Postgres!")
+	}
+	defer dbConn.Close()
 
-	log.Println("Starting server on :8080...")
-	app.Router.Run(":8080")
-}
+	userRepo := data.NewPostgresUserRepository(dbConn)
+	jwtUtil := jwt.NewJWTUtil(os.Getenv("JWT_KEY"))
+	authSvc := service.NewAuthService(jwtUtil, userRepo)
 
-func InitializeApp() *App {
-	cfg := config.LoadConfig()
-	err := godotenv.Load()
+	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
+		log.Fatal(err)
 	}
 
-	db := initializeDatabase(cfg)
-
-	r := initializeRouter(db)
-
-	return &App{
-		Config: cfg,
-		DB:     db,
-		Router: r,
+	s := grpc.NewServer()
+	pb.RegisterAuthServiceServer(s, authSvc)
+	log.Println("Auth service running on :50051")
+	if err := s.Serve(lis); err != nil {
+		log.Fatal(err)
 	}
+
 }
 
-func initializeDatabase(cfg *config.Config) *sql.DB {
-	dsn := "host=" + cfg.DBHost + " user=" + cfg.DBUser + " password=" + cfg.DBPassword + " dbname=" + cfg.DBName + " sslmode=disable"
-	db, err := sql.Open("postgres", dsn)
+func openDB(dsn string) (*sql.DB, error) {
+	db, err := sql.Open("pgx", dsn)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		log.Println(err)
+		return nil, err
 	}
-	return db
+
+	err = db.Ping()
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	return db, nil
 }
 
-// sets up the router and handlers
+func connectToDB() *sql.DB {
+	dsn := os.Getenv("DSN")
+	counts := 0
 
-func initializeRouter(db *sql.DB) *gin.Engine {
-	userRepo := repository.NewUserRepository(db)
-	authService := services.NewAuthService(*userRepo, util.JWTUtil{})
-	authHandler := handlers.NewAuthHandler(authService)
+	for {
+		connection, err := openDB(dsn)
+		if err != nil {
+			log.Println("Postgres not yet ready...")
+			counts++
+		} else {
+			log.Println("Connected to Postgres")
+			return connection
+		}
 
-	r := gin.Default()
+		if counts > 10 {
+			log.Println(err)
+			return nil
+		}
 
-	r.Use(middleware.ErrorHandler())
-
-	routes := router.NewRouter(authHandler)
-	routes.RegisterRoutes(r)
-
-	return r
+		log.Println("Backing off for two seconds...")
+		time.Sleep(2 * time.Second)
+		continue
+	}
 }
