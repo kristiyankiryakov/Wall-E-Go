@@ -25,10 +25,6 @@ func NewAuthService(jwtUtil jwt.JWTUtil, userRepo data.UserRepository) *AuthServ
 	}
 }
 
-type JWTUtil interface {
-	GenerateToken(username string) (string, error)
-}
-
 func (s *AuthService) RegisterUser(ctx context.Context, req *pb.RegisterUserRequest) (*pb.RegisterUserResponse, error) {
 	user := data.User{Username: req.Username, Password: req.Password}
 
