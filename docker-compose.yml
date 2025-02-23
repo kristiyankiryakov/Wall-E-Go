@@ -1,7 +1,27 @@
 services:
+
+# Broker Service
+  broker:
+    build:
+      context: ./broker-service
+      dockerfile: ./broker-service.dockerfile
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - auth
+    environment:
+      - AUTH_HOST=auth:50001
+    deploy:
+      mode: replicated
+      replicas: 1
+    networks:
+      - myapp-network
+
+# Authentication Service
   auth:
     depends_on:
-      - postgres
+      - auth-db
     build:
       context: ./auth-service
       dockerfile: ./auth-service.dockerfile
@@ -13,30 +33,14 @@ services:
       replicas: 1
     environment:
       JWT_KEY: MIGbMBAGByqGSM49AgEGBSuBBAAjA4GGAAQAwczAzq0G4TRw8Qj69FRxnuV380IQ #should be hidden in prod!!!
-      DSN: "host=postgres port=5432 user=user password=password dbname=auth_service sslmode=disable timezone=UTC connect_timeout=5"
-    networks:
-      - myapp-network
-  broker:
-    build:
-      context: ./broker-service
-      dockerfile: ./broker-service.dockerfile
-    restart: always
-    ports:
-      - "8080:8080"
-    depends_on:
-      - auth
-    environment:
-      - AUTH_HOST=auth:50051
-    deploy:
-      mode: replicated
-      replicas: 1
+      DSN: "host=auth-db port=5432 user=user password=password dbname=auth_service sslmode=disable timezone=UTC connect_timeout=5"
     networks:
       - myapp-network
 
-  postgres:
+  auth-db:
     image: 'postgres:14.2'
     ports:
-      - "5432:5432"
+      - "5433:5432"
     deploy:
       mode: replicated
       replicas: 1
@@ -45,13 +49,51 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: auth_service
     volumes:
-      - ./db-data/postgres/:/var/lib/postgresql/data/
+      - ./auth-data/postgres/:/var/lib/postgresql/data/
+      - ./migrations:/migrations #Mount migrations folder
+    networks:
+      - myapp-network
+  
+  # Wallet Service
+  wallet:
+    depends_on:
+      - wallet-db
+    build:
+      context: ./wallet-service
+      dockerfile: ./wallet-service.dockerfile
+    restart: always
+    ports:
+      - "50002:50002"
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      JWT_KEY: MIGbMBAGByqGSM49AgEGBSuBBAAjA4GGAAQAwczAzq0G4TRw8Qj69FRxnuV380IQ #should be hidden in prod!!!
+      DSN: "host=wallet-db port=5432 user=user password=password dbname=wallet_db sslmode=disable timezone=UTC connect_timeout=5"
+    networks:
+      - myapp-network
+
+# Wallet Database 
+  wallet-db:
+    image: 'postgres:14.2'
+    ports:
+      - "5434:5432"
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: wallet_db
+    volumes:
+      - ./wallet-data/postgres/:/var/lib/postgresql/data/
       - ./migrations:/migrations #Mount migrations folder
     networks:
       - myapp-network
 
 volumes:
-  db_data:
+  auth-data:
+  wallet-data:
 
 networks:
   myapp-network:

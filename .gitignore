@@ -23,6 +23,8 @@ go.work
 go.work.sum
 
 *db-data
+*auth-data
+*wallet-data
 
 # env file
 .env

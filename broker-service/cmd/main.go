@@ -1,7 +1,7 @@
 package main
 
 import (
-	"broker-service/internal/authclient"
+	"broker-service/internal/clients"
 	"broker-service/internal/handlers"
 	"log"
 
@@ -13,12 +13,16 @@ type App struct {
 }
 
 func main() {
-	authClient, err := authclient.NewAuthClient("auth:50001")
+	authClient, err := clients.NewAuthClient("auth:50001")
+	if err != nil {
+		log.Fatal(err)
+	}
+	walletClient, err := clients.NewWalletClient("wallet:50002")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	handler := handlers.NewBrokerHandler(authClient)
+	handler := handlers.NewBrokerHandler(authClient, walletClient)
 	router := handlers.SetupRouter(handler)
 
 	log.Println("Broker service running on :8080")

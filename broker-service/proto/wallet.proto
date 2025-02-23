@@ -1,0 +1,15 @@
+syntax = "proto3";
+package wallet;
+option go_package = "./proto";
+
+service WalletService {
+  rpc CreateWallet (CreateWalletRequest) returns (CreateWalletResponse);
+}
+
+message CreateWalletRequest {
+  string name = 1;
+}
+
+message CreateWalletResponse{
+    string wallet_id = 1;
+}

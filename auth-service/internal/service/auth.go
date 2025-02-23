@@ -5,7 +5,7 @@ import (
 	"log"
 	"wall-e-go/internal/data"
 	"wall-e-go/internal/jwt"
-	pb "wall-e-go/proto"
+	authpb "wall-e-go/proto"
 
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc/codes"
@@ -13,7 +13,7 @@ import (
 )
 
 type AuthService struct {
-	pb.UnimplementedAuthServiceServer
+	authpb.UnimplementedAuthServiceServer
 	jwtUtil  jwt.JWTUtil
 	userRepo data.UserRepository
 }
@@ -25,7 +25,7 @@ func NewAuthService(jwtUtil jwt.JWTUtil, userRepo data.UserRepository) *AuthServ
 	}
 }
 
-func (s *AuthService) RegisterUser(ctx context.Context, req *pb.RegisterUserRequest) (*pb.RegisterUserResponse, error) {
+func (s *AuthService) RegisterUser(ctx context.Context, req *authpb.RegisterUserRequest) (*authpb.RegisterUserResponse, error) {
 	user := data.User{Username: req.Username, Password: req.Password}
 
 	// Check for existing user
@@ -49,7 +49,7 @@ func (s *AuthService) RegisterUser(ctx context.Context, req *pb.RegisterUserRequ
 		return nil, status.Errorf(codes.Internal, "failed to create user: %v", err)
 	}
 
-	return &pb.RegisterUserResponse{Token: token}, nil
+	return &authpb.RegisterUserResponse{Token: token}, nil
 }
 
 func (s *AuthService) handleExistingUser(username string) error {
@@ -64,7 +64,7 @@ func (s *AuthService) handleExistingUser(username string) error {
 	return nil
 }
 
-func (s *AuthService) Authenticate(ctx context.Context, req *pb.AuthenticateRequest) (*pb.AuthenticateResponse, error) {
+func (s *AuthService) Authenticate(ctx context.Context, req *authpb.AuthenticateRequest) (*authpb.AuthenticateResponse, error) {
 	existingUser, err := s.userRepo.GetByUsername(req.Username)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed find user: %v", err)
@@ -79,5 +79,5 @@ func (s *AuthService) Authenticate(ctx context.Context, req *pb.AuthenticateRequ
 		return nil, status.Errorf(codes.Internal, "failed to generate token: %v", err)
 	}
 
-	return &pb.AuthenticateResponse{Token: token}, nil
+	return &authpb.AuthenticateResponse{Token: token}, nil
 }

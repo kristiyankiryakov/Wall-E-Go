@@ -1,20 +1,51 @@
 package handlers
 
 import (
-	"broker-service/internal/authclient"
+	"broker-service/internal/clients"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
 type BrokerHandler struct {
-	authClient *authclient.AuthClient
+	authClient   *clients.AuthClient
+	walletClient *clients.WalletClient
 }
 
-func NewBrokerHandler(authClient *authclient.AuthClient) *BrokerHandler {
-	return &BrokerHandler{authClient: authClient}
+func NewBrokerHandler(authClient *clients.AuthClient, walletClient *clients.WalletClient) *BrokerHandler {
+	return &BrokerHandler{
+		authClient:   authClient,
+		walletClient: walletClient,
+	}
+}
+
+func (h *BrokerHandler) CreateWallet(c *gin.Context) {
+	var req struct {
+		Name string `json:"name"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+	// Extract JWT from HTTP Header
+	authHeader := c.Request.Header.Get("Authorization")
+	if authHeader == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing token"})
+		return
+	}
+
+	ctx := metadata.AppendToOutgoingContext(c.Request.Context(), "authorization", authHeader)
+
+	walletID, err := h.walletClient.CreateWallet(ctx, req.Name)
+	if err != nil {
+		handleGRPCError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"wallet_id": walletID})
 }
 
 func (h *BrokerHandler) RegisterUser(c *gin.Context) {
@@ -57,6 +88,7 @@ func SetupRouter(h *BrokerHandler) *gin.Engine {
 	r := gin.Default()
 	r.POST("/register", h.RegisterUser)
 	r.POST("/authenticate", h.Authenticate)
+	r.POST("/create", h.CreateWallet)
 	return r
 }
 
