@@ -13,7 +13,7 @@ type App struct {
 }
 
 func main() {
-	authClient, err := authclient.NewAuthClient("auth:50051")
+	authClient, err := authclient.NewAuthClient("auth:50001")
 	if err != nil {
 		log.Fatal(err)
 	}
