@@ -20,7 +20,7 @@ func NewJWTUtil(secretKey string) *JWTUtilImpl {
 	return &JWTUtilImpl{secretKey: secretKey}
 }
 
-func (j *JWTUtilImpl) GenerateToken(user_id string) (string, error) {
+func (j *JWTUtilImpl) GenerateToken(user_id int) (string, error) {
 	if j.secretKey == "" {
 		log.Println("secret key is missing")
 		return "", errors.WrapError(errors.ErrInternal, "secret key is missing")
