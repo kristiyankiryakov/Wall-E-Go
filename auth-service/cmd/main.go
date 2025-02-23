@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"net"
 	"os"
@@ -32,14 +33,14 @@ func main() {
 	jwtUtil := jwt.NewJWTUtil(os.Getenv("JWT_KEY"))
 	authSvc := service.NewAuthService(jwtUtil, userRepo)
 
-	lis, err := net.Listen("tcp", ":50051")
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", WEB_PORT))
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	s := grpc.NewServer()
 	pb.RegisterAuthServiceServer(s, authSvc)
-	log.Println("Auth service running on :50051")
+	log.Printf("Auth service running on :%s", WEB_PORT)
 	if err := s.Serve(lis); err != nil {
 		log.Fatal(err)
 	}
