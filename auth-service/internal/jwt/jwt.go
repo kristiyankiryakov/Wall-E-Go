@@ -9,7 +9,7 @@ import (
 )
 
 type JWTUtil interface {
-	GenerateToken(username string) (string, error)
+	GenerateToken(user_id int) (string, error)
 }
 
 type JWTUtilImpl struct {
@@ -20,7 +20,7 @@ func NewJWTUtil(secretKey string) *JWTUtilImpl {
 	return &JWTUtilImpl{secretKey: secretKey}
 }
 
-func (j *JWTUtilImpl) GenerateToken(username string) (string, error) {
+func (j *JWTUtilImpl) GenerateToken(user_id string) (string, error) {
 	if j.secretKey == "" {
 		log.Println("secret key is missing")
 		return "", errors.WrapError(errors.ErrInternal, "secret key is missing")
@@ -28,7 +28,7 @@ func (j *JWTUtilImpl) GenerateToken(username string) (string, error) {
 
 	claims := jwt.MapClaims{
 		"iss": "auth-server",
-		"sub": username,
+		"sub": user_id,
 		"exp": time.Now().Add(25 * time.Hour).Unix(),
 	}
 

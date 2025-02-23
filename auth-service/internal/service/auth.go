@@ -40,7 +40,7 @@ func (s *AuthService) RegisterUser(ctx context.Context, req *pb.RegisterUserRequ
 	}
 	user.Password = string(hashedPassword)
 
-	token, err := s.jwtUtil.GenerateToken(user.Username)
+	token, err := s.jwtUtil.GenerateToken(user.ID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to generate token: %v", err)
 	}
@@ -74,7 +74,7 @@ func (s *AuthService) Authenticate(ctx context.Context, req *pb.AuthenticateRequ
 		return nil, status.Errorf(codes.Unauthenticated, "invalid credentials")
 	}
 
-	token, err := s.jwtUtil.GenerateToken(existingUser.Username)
+	token, err := s.jwtUtil.GenerateToken(existingUser.ID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to generate token: %v", err)
 	}
