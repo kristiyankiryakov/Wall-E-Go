@@ -2,10 +2,8 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"wall-e-go/internal/data"
-	"wall-e-go/internal/errors"
 	"wall-e-go/internal/jwt"
 	pb "wall-e-go/proto"
 
@@ -86,23 +84,4 @@ func (s *AuthService) Authenticate(ctx context.Context, req *pb.AuthenticateRequ
 	}
 
 	return &pb.AuthenticateResponse{Token: token}, nil
-}
-
-func (s *AuthService) GetAllUsers(ctx context.Context, req *pb.GetAllUsersRequest) (*pb.GetAllUsersResponse, error) {
-	users, err := s.userRepo.GetAll()
-	if err != nil {
-		return nil, errors.WrapError(errors.ErrInternal, fmt.Sprintf("failed to get users: %v", err))
-	}
-
-	var pbUsers []*pb.User
-	for _, u := range users {
-		pbUsers = append(pbUsers, &pb.User{
-			Id:        string(rune(u.ID)),
-			Username:  u.Username,
-			Password:  u.Password, // Hashed; included for completeness
-			CreatedAt: u.CreatedAt.Unix(),
-			UpdatedAt: u.UpdatedAt.Unix(),
-		})
-	}
-	return &pb.GetAllUsersResponse{Users: pbUsers}, nil
 }

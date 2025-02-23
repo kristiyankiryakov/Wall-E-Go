@@ -8,7 +8,6 @@ option go_package = "./proto";
 service AuthService {
   rpc RegisterUser (RegisterUserRequest) returns (RegisterUserResponse);
   rpc Authenticate (AuthenticateRequest) returns (AuthenticateResponse);
-  rpc GetAllUsers (GetAllUsersRequest) returns (GetAllUsersResponse);
 }
 
 message RegisterUserRequest {
@@ -27,18 +26,4 @@ message AuthenticateRequest {
 
 message AuthenticateResponse {
   string token = 1;
-}
-
-message GetAllUsersRequest {}
-
-message User {
-  string id = 1;
-  string username = 2;
-  string password = 3;
-  int64 created_at = 4;
-  int64 updated_at = 5;
-}
-
-message GetAllUsersResponse {
-  repeated User users = 1;
 }
