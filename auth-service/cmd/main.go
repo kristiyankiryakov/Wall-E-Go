@@ -18,10 +18,10 @@ import (
 	"google.golang.org/grpc"
 )
 
-const WEB_PORT = "50001"
+const gRPC_PORT = "50001"
 
 func main() {
-	log.Printf("Starting server on :%s...", WEB_PORT)
+	log.Printf("Starting server on :%s...", gRPC_PORT)
 
 	dbConn := connectToDB()
 	if dbConn == nil {
@@ -33,14 +33,14 @@ func main() {
 	jwtUtil := jwt.NewJWTUtil(os.Getenv("JWT_KEY"))
 	authSvc := service.NewAuthService(jwtUtil, userRepo)
 
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", WEB_PORT))
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", gRPC_PORT))
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	s := grpc.NewServer()
 	pb.RegisterAuthServiceServer(s, authSvc)
-	log.Printf("Auth service running on :%s", WEB_PORT)
+	log.Printf("Auth service running on :%s", gRPC_PORT)
 	if err := s.Serve(lis); err != nil {
 		log.Fatal(err)
 	}
