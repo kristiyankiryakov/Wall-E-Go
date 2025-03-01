@@ -23,11 +23,25 @@ func main() {
 		log.Fatal(err)
 	}
 
-	handler := handlers.NewBrokerHandler(authClient, walletClient)
-	router := handlers.SetupRouter(handler)
+	// Initialize handlers
+	authHandler := handlers.NewAuthHandler(authClient)
+	walletHandler := handlers.NewWalletHandler(walletClient)
+
+	r := gin.Default()
+
+	authGroup := r.Group("/auth")
+	{
+		authGroup.POST("/login", authHandler.Authenticate)
+		authGroup.POST("/register", authHandler.Register)
+	}
+
+	walletGroup := r.Group("/wallet")
+	{
+		walletGroup.GET("/view", walletHandler.ViewBalance)
+	}
 
 	log.Println("Broker service running on :8080")
-	if err := router.Run(":8080"); err != nil {
-		log.Fatal(err)
+	if err := r.Run(":8080"); err != nil {
+		log.Fatalf("Failed to run server: %v", err)
 	}
 }
