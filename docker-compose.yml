@@ -5,16 +5,11 @@ services:
     build:
       context: ./broker-service
       dockerfile: ./broker-service.dockerfile
-    restart: always
     ports:
       - "8080:8080"
-    depends_on:
-      - auth
     environment:
       - AUTH_HOST=auth:50001
-    deploy:
-      mode: replicated
-      replicas: 1
+      - WALLET_HOST=wallet:50002
     networks:
       - myapp-network
 
@@ -25,12 +20,8 @@ services:
     build:
       context: ./auth-service
       dockerfile: ./auth-service.dockerfile
-    restart: always
     ports:
       - "50001:50001"
-    deploy:
-      mode: replicated
-      replicas: 1
     environment:
       JWT_KEY: MIGbMBAGByqGSM49AgEGBSuBBAAjA4GGAAQAwczAzq0G4TRw8Qj69FRxnuV380IQ #should be hidden in prod!!!
       DSN: "host=auth-db port=5432 user=user password=password dbname=auth_service sslmode=disable timezone=UTC connect_timeout=5"
@@ -49,8 +40,8 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: auth_service
     volumes:
-      - ./auth-data/postgres/:/var/lib/postgresql/data/
-      - ./migrations:/migrations #Mount migrations folder
+      - ./auth-service/auth-data/postgres/:/var/lib/postgresql/data/
+      - ./auth-service/migrations:/migrations
     networks:
       - myapp-network
   
@@ -61,12 +52,8 @@ services:
     build:
       context: ./wallet-service
       dockerfile: ./wallet-service.dockerfile
-    restart: always
     ports:
       - "50002:50002"
-    deploy:
-      mode: replicated
-      replicas: 1
     environment:
       JWT_KEY: MIGbMBAGByqGSM49AgEGBSuBBAAjA4GGAAQAwczAzq0G4TRw8Qj69FRxnuV380IQ #should be hidden in prod!!!
       DSN: "host=wallet-db port=5432 user=user password=password dbname=wallet_db sslmode=disable timezone=UTC connect_timeout=5"
@@ -86,8 +73,8 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: wallet_db
     volumes:
-      - ./wallet-data/postgres/:/var/lib/postgresql/data/
-      - ./migrations:/migrations #Mount migrations folder
+      - ./wallet-service/wallet-data/postgres/:/var/lib/postgresql/data/
+      - ./wallet-service/migrations:/migrations
     networks:
       - myapp-network
 

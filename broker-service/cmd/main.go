@@ -4,6 +4,7 @@ import (
 	"broker-service/internal/clients"
 	"broker-service/internal/handlers"
 	"log"
+	"os"
 
 	"github.com/gin-gonic/gin"
 )
@@ -13,11 +14,11 @@ type App struct {
 }
 
 func main() {
-	authClient, err := clients.NewAuthClient("auth:50001")
+	authClient, err := clients.NewAuthClient(os.Getenv("AUTH_HOST"))
 	if err != nil {
 		log.Fatal(err)
 	}
-	walletClient, err := clients.NewWalletClient("wallet:50002")
+	walletClient, err := clients.NewWalletClient(os.Getenv("WALLET_HOST"))
 	if err != nil {
 		log.Fatal(err)
 	}
