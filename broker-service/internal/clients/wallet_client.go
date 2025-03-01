@@ -32,9 +32,9 @@ func (c *WalletClient) CreateWallet(ctx context.Context, walletName string) (str
 	return resp.WalletId, nil
 }
 
-func (c *WalletClient) ViewBalance(ctx context.Context, walletName string) (*models.ViewBalanceResponse, error) {
+func (c *WalletClient) ViewBalance(ctx context.Context, walletID string) (*models.ViewBalanceResponse, error) {
 	rpcResponse, err := c.client.ViewBalance(ctx, &walletpb.ViewBalanceRequest{
-		Name: walletName,
+		WalletId: walletID,
 	})
 	if err != nil {
 		return nil, err

@@ -3,6 +3,7 @@ package handlers
 import (
 	"broker-service/internal/clients"
 	"broker-service/internal/utils"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -49,9 +50,9 @@ func (h *WalletHandlerImpl) CreateWallet(c *gin.Context) {
 }
 
 func (h *WalletHandlerImpl) ViewBalance(c *gin.Context) {
-	walletName := c.Query("walletName")
-	if walletName == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+	walletID := c.Query("walletID")
+	if walletID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("invalid walletID: %v", walletID)})
 		return
 	}
 
@@ -59,7 +60,7 @@ func (h *WalletHandlerImpl) ViewBalance(c *gin.Context) {
 	authHeader := c.Request.Header.Get("Authorization")
 	ctx := metadata.AppendToOutgoingContext(c.Request.Context(), "authorization", authHeader)
 
-	response, err := h.walletClient.ViewBalance(ctx, walletName)
+	response, err := h.walletClient.ViewBalance(ctx, walletID)
 	if err != nil {
 		utils.HandleGRPCError(c, err)
 		return

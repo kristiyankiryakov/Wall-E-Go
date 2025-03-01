@@ -65,12 +65,12 @@ func (s *WalletServiceImpl) ViewBalance(ctx context.Context, req *walletpb.ViewB
 		return nil, err
 	}
 
-	wallet, err := s.walletRepo.GetByUserIdAndWalletName(userID, req.Name)
+	wallet, err := s.walletRepo.GetByUserIdAndWalletID(userID, req.GetWalletId())
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "error getting wallet: %v", err)
 	}
 	if wallet.ID == 0 {
-		return nil, status.Errorf(codes.NotFound, "wallet with name: %v does not exists", req.Name)
+		return nil, status.Errorf(codes.NotFound, "wallet with id: %v does not exists", req.GetWalletId())
 	}
 
 	return &walletpb.ViewBalanceResponse{Balance: int64(wallet.Balance), Name: wallet.Name}, nil

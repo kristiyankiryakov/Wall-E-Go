@@ -8,7 +8,7 @@ service WalletService {
 }
 
 message ViewBalanceRequest{
-  string name = 1;
+  string wallet_id = 1;
 }
 
 message ViewBalanceResponse {

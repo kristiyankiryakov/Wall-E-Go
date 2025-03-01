@@ -18,7 +18,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-const gRPC_PORT = "50002"
+var gRPC_PORT = os.Getenv("WALLET_PORT")
 
 func main() {
 	log.Printf("Starting server on :%s...", gRPC_PORT)
