@@ -1,6 +1,7 @@
 package clients
 
 import (
+	"broker-service/internal/models"
 	walletpb "broker-service/proto"
 	"context"
 	"log"
@@ -29,4 +30,20 @@ func (c *WalletClient) CreateWallet(ctx context.Context, walletName string) (str
 		return "", err
 	}
 	return resp.WalletId, nil
+}
+
+func (c *WalletClient) ViewBalance(ctx context.Context, walletName string) (*models.ViewBalanceResponse, error) {
+	rpcResponse, err := c.client.ViewBalance(ctx, &walletpb.ViewBalanceRequest{
+		Name: walletName,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	log.Println(rpcResponse)
+
+	return &models.ViewBalanceResponse{
+		Name:    rpcResponse.GetName(),
+		Balance: rpcResponse.GetBalance(),
+	}, nil
 }

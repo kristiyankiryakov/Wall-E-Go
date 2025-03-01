@@ -84,11 +84,32 @@ func (h *BrokerHandler) Authenticate(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"token": token})
 }
 
+func (h *BrokerHandler) ViewBalance(c *gin.Context) {
+	walletName := c.Query("walletName")
+	if walletName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	// Extract JWT from HTTP Header
+	authHeader := c.Request.Header.Get("Authorization")
+	ctx := metadata.AppendToOutgoingContext(c.Request.Context(), "authorization", authHeader)
+
+	response, err := h.walletClient.ViewBalance(ctx, walletName)
+	if err != nil {
+		handleGRPCError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
 func SetupRouter(h *BrokerHandler) *gin.Engine {
 	r := gin.Default()
 	r.POST("/register", h.RegisterUser)
 	r.POST("/authenticate", h.Authenticate)
 	r.POST("/create", h.CreateWallet)
+	r.GET("/view", h.ViewBalance)
 	return r
 }
 

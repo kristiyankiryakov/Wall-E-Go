@@ -4,6 +4,16 @@ option go_package = "./proto";
 
 service WalletService {
   rpc CreateWallet (CreateWalletRequest) returns (CreateWalletResponse);
+  rpc ViewBalance (ViewBalanceRequest) returns (ViewBalanceResponse);
+}
+
+message ViewBalanceRequest{
+  string name = 1;
+}
+
+message ViewBalanceResponse {
+  int64 balance = 1;
+  string name = 2;
 }
 
 message CreateWalletRequest {

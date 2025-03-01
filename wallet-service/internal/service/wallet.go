@@ -58,6 +58,25 @@ func (s *WalletServiceImpl) CreateWallet(ctx context.Context, req *walletpb.Crea
 	return &walletpb.CreateWalletResponse{WalletId: strconv.Itoa(walletID)}, nil
 }
 
+func (s *WalletServiceImpl) ViewBalance(ctx context.Context, req *walletpb.ViewBalanceRequest) (*walletpb.ViewBalanceResponse, error) {
+
+	userID, err := s.extractUserIdAndValidateToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	wallet, err := s.walletRepo.GetByUserIdAndWalletName(userID, req.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "error getting wallet: %v", err)
+	}
+	if wallet.ID == 0 {
+		return nil, status.Errorf(codes.NotFound, "wallet with name: %v does not exists", req.Name)
+	}
+
+	return &walletpb.ViewBalanceResponse{Balance: int64(wallet.Balance), Name: wallet.Name}, nil
+
+}
+
 func (s *WalletServiceImpl) extractUserIdAndValidateToken(ctx context.Context) (int, error) {
 
 	// Extract token from gRPC metadata
