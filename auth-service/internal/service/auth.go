@@ -12,20 +12,25 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type AuthService struct {
+type AuthService interface {
+	RegisterUser(ctx context.Context, req *authpb.RegisterUserRequest) (*authpb.RegisterUserResponse, error)
+	Authenticate(ctx context.Context, req *authpb.AuthenticateRequest) (*authpb.AuthenticateResponse, error)
+}
+
+type AuthServiceImpl struct {
 	authpb.UnimplementedAuthServiceServer
 	jwtUtil  jwt.JWTUtil
 	userRepo data.UserRepository
 }
 
-func NewAuthService(jwtUtil jwt.JWTUtil, userRepo data.UserRepository) *AuthService {
-	return &AuthService{
+func NewAuthService(jwtUtil jwt.JWTUtil, userRepo data.UserRepository) *AuthServiceImpl {
+	return &AuthServiceImpl{
 		jwtUtil:  jwtUtil,
 		userRepo: userRepo,
 	}
 }
 
-func (s *AuthService) RegisterUser(ctx context.Context, req *authpb.RegisterUserRequest) (*authpb.RegisterUserResponse, error) {
+func (s *AuthServiceImpl) RegisterUser(ctx context.Context, req *authpb.RegisterUserRequest) (*authpb.RegisterUserResponse, error) {
 	user := data.User{Username: req.Username, Password: req.Password}
 
 	// Check for existing user
@@ -52,7 +57,7 @@ func (s *AuthService) RegisterUser(ctx context.Context, req *authpb.RegisterUser
 	return &authpb.RegisterUserResponse{Token: token}, nil
 }
 
-func (s *AuthService) handleExistingUser(username string) error {
+func (s *AuthServiceImpl) handleExistingUser(username string) error {
 	existingUser, err := s.userRepo.GetByUsername(username)
 
 	if err == nil && existingUser.ID != 0 {
@@ -64,7 +69,7 @@ func (s *AuthService) handleExistingUser(username string) error {
 	return nil
 }
 
-func (s *AuthService) Authenticate(ctx context.Context, req *authpb.AuthenticateRequest) (*authpb.AuthenticateResponse, error) {
+func (s *AuthServiceImpl) Authenticate(ctx context.Context, req *authpb.AuthenticateRequest) (*authpb.AuthenticateResponse, error) {
 	existingUser, err := s.userRepo.GetByUsername(req.Username)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed find user: %v", err)
