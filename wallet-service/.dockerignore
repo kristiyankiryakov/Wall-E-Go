@@ -1,0 +1,8 @@
+.git
+.gitignore
+*.md
+Dockerfile
+docker-compose.yml
+wallet-data/
+migrations/
+*.log
