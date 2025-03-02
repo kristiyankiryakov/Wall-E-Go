@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"strconv"
 	walletpb "wallet-service/proto"
 
 	"wallet-service/internal/data"
@@ -15,6 +14,7 @@ import (
 
 type WalletService interface {
 	CreateWallet(ctx context.Context, req *walletpb.CreateWalletRequest) (*walletpb.CreateWalletResponse, error)
+	ViewBalance(ctx context.Context, req *walletpb.ViewBalanceRequest) (*walletpb.ViewBalanceResponse, error)
 }
 
 type WalletServiceImpl struct {
@@ -55,29 +55,42 @@ func (s *WalletServiceImpl) CreateWallet(ctx context.Context, req *walletpb.Crea
 		return nil, status.Errorf(codes.Internal, "error creating a wallet: %v", err)
 	}
 
-	return &walletpb.CreateWalletResponse{WalletId: strconv.Itoa(walletID)}, nil
+	return &walletpb.CreateWalletResponse{
+		WalletId: int64(walletID),
+	}, nil
 }
 
 func (s *WalletServiceImpl) ViewBalance(ctx context.Context, req *walletpb.ViewBalanceRequest) (*walletpb.ViewBalanceResponse, error) {
-
 	userID, err := s.extractUserIdAndValidateToken(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	wallet, err := s.walletRepo.GetByUserIdAndWalletID(userID, req.GetWalletId())
+	wallet, err := s.getWalletByUserAndWalletID(userID, req.WalletId)
+	if err != nil {
+		return nil, err
+	}
+
+	return &walletpb.ViewBalanceResponse{
+		Balance: wallet.Balance,
+		Name:    wallet.Name,
+	}, nil
+
+}
+
+func (s *WalletServiceImpl) getWalletByUserAndWalletID(userID, walletID int64) (*data.Wallet, error) {
+	wallet, err := s.walletRepo.GetByUserIdAndWalletID(int64(userID), walletID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "error getting wallet: %v", err)
 	}
 	if wallet.ID == 0 {
-		return nil, status.Errorf(codes.NotFound, "wallet with id: %v does not exists", req.GetWalletId())
+		return nil, status.Errorf(codes.NotFound, "wallet with id: %d does not exists", walletID)
 	}
 
-	return &walletpb.ViewBalanceResponse{Balance: int64(wallet.Balance), Name: wallet.Name}, nil
-
+	return wallet, nil
 }
 
-func (s *WalletServiceImpl) extractUserIdAndValidateToken(ctx context.Context) (int, error) {
+func (s *WalletServiceImpl) extractUserIdAndValidateToken(ctx context.Context) (int64, error) {
 
 	// Extract token from gRPC metadata
 	md, ok := metadata.FromIncomingContext(ctx)
@@ -100,5 +113,5 @@ func (s *WalletServiceImpl) extractUserIdAndValidateToken(ctx context.Context) (
 		return 0, status.Errorf(codes.Internal, "error processing token")
 	}
 
-	return userID, nil
+	return int64(userID), nil
 }

@@ -37,8 +37,13 @@ func main() {
 
 	walletGroup := r.Group("/wallet")
 	{
+		walletGroup.POST("/create", walletHandler.CreateWallet)
 		walletGroup.GET("/view", walletHandler.ViewBalance)
 	}
+	// txGroup := r.Group("/transaction")
+	// {
+	// txGroup.PUT("/deposit")
+	// }
 
 	log.Println("Broker service running on :8080")
 	if err := r.Run(":8080"); err != nil {

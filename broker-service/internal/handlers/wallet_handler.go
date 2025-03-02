@@ -5,6 +5,7 @@ import (
 	"broker-service/internal/utils"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"google.golang.org/grpc/metadata"
@@ -50,9 +51,14 @@ func (h *WalletHandlerImpl) CreateWallet(c *gin.Context) {
 }
 
 func (h *WalletHandlerImpl) ViewBalance(c *gin.Context) {
-	walletID := c.Query("walletID")
-	if walletID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("invalid walletID: %v", walletID)})
+	walletIDParam := c.Query("walletID")
+	if walletIDParam == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("invalid or missing walletID: %v", walletIDParam)})
+		return
+	}
+	walletID, err := strconv.ParseInt(walletIDParam, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("error parsing walletID: %v", walletIDParam)})
 		return
 	}
 

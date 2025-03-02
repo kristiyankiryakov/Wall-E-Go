@@ -1,2 +1,0 @@
-ALTER TABLE transactions
-ADD CONSTRAINT POSITIVE_AMOUNT CHECK (amount >= 0);

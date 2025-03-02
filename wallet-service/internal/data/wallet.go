@@ -10,10 +10,10 @@ import (
 const DB_TIMEOUT = time.Second * 10
 
 type WalletRepository interface {
-	CreateWallet(wallet Wallet) (int, error)
+	CreateWallet(wallet Wallet) (int64, error)
 
-	GetByUserIdAndWalletName(user_id int, walletName string) (*Wallet, error)
-	GetByUserIdAndWalletID(user_id int, walletID string) (*Wallet, error)
+	GetByUserIdAndWalletName(user_id int64, walletName string) (*Wallet, error)
+	GetByUserIdAndWalletID(user_id int64, walletID int64) (*Wallet, error)
 }
 
 type PostgresWalletRepository struct {
@@ -25,7 +25,7 @@ func NewPostgresWalletRepository(db *sql.DB) *PostgresWalletRepository {
 }
 
 // GetByUserIDAndWalletName returns one wallet by wallet Name and UserID
-func (r *PostgresWalletRepository) GetByUserIdAndWalletName(user_id int, walletName string) (*Wallet, error) {
+func (r *PostgresWalletRepository) GetByUserIdAndWalletName(user_id int64, walletName string) (*Wallet, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), DB_TIMEOUT)
 	defer cancel()
 
@@ -52,7 +52,7 @@ func (r *PostgresWalletRepository) GetByUserIdAndWalletName(user_id int, walletN
 }
 
 // GetByUserIdAndWalletID returns one wallet by wallet ID and UserID
-func (r *PostgresWalletRepository) GetByUserIdAndWalletID(user_id int, walletID string) (*Wallet, error) {
+func (r *PostgresWalletRepository) GetByUserIdAndWalletID(user_id int64, walletID int64) (*Wallet, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), DB_TIMEOUT)
 	defer cancel()
 
@@ -78,7 +78,7 @@ func (r *PostgresWalletRepository) GetByUserIdAndWalletID(user_id int, walletID 
 	return &wallet, nil
 }
 
-func (r *PostgresWalletRepository) CreateWallet(wallet Wallet) (int, error) {
+func (r *PostgresWalletRepository) CreateWallet(wallet Wallet) (int64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), DB_TIMEOUT)
 	defer cancel()
 
@@ -98,5 +98,5 @@ func (r *PostgresWalletRepository) CreateWallet(wallet Wallet) (int, error) {
 		return 0, err
 	}
 
-	return newID, nil
+	return int64(newID), nil
 }

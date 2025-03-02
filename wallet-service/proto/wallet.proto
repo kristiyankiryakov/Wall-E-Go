@@ -2,35 +2,17 @@ syntax = "proto3";
 package wallet;
 option go_package = "./proto";
 
-enum TransactionType{
-  DEPOSIT = 0;
-  WITHDRAW = 1;
-}
-
 service WalletService {
   rpc CreateWallet (CreateWalletRequest) returns (CreateWalletResponse);
   rpc ViewBalance (ViewBalanceRequest) returns (ViewBalanceResponse);
-  rpc Deposit (TransactionRequest) returns (TransactionResponse); 
-}
-
-message TransactionRequest{
-  string wallet_id = 1;
-  int64 amount = 2;
-  TransactionType transaction_type = 3;
-}
-
-message TransactionResponse{
-  string wallet_id = 1;
-  int64 currentBalance = 2;
-  TransactionType transaction_type = 3;
 }
 
 message ViewBalanceRequest{
-  string wallet_id = 1;
+  int64 wallet_id = 1;
 }
 
 message ViewBalanceResponse {
-  int64 balance = 1;
+  double balance = 1;
   string name = 2;
 }
 
@@ -39,5 +21,5 @@ message CreateWalletRequest {
 }
 
 message CreateWalletResponse{
-    string wallet_id = 1;
+    int64 wallet_id = 1;
 }
