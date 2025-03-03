@@ -8,11 +8,10 @@ import (
 	"net"
 	"os"
 	"time"
-	"wallet-service/internal/data"
-	"wallet-service/internal/jwt"
-	"wallet-service/internal/service"
-	"wallet-service/kafka"
-	pb "wallet-service/proto"
+	"transaction-service/internal/data"
+	"transaction-service/internal/service"
+	"transaction-service/kafka"
+	pb "transaction-service/proto"
 
 	_ "github.com/jackc/pgconn"
 	_ "github.com/jackc/pgx/v4"
@@ -20,7 +19,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-var gRPC_PORT = os.Getenv("WALLET_PORT")
+var gRPC_PORT = os.Getenv("TRANSACTION_PORT")
 
 func main() {
 	log.Printf("Starting server on :%s...", gRPC_PORT)
@@ -31,13 +30,17 @@ func main() {
 	}
 	defer dbConn.Close()
 
+	trxProducer := kafka.NewProducer()
+	defer trxProducer.Close()
+
 	trxConsumer := kafka.NewConsumer(dbConn)
+	defer trxConsumer.Close()
+
 	//runs in a goroutine
 	go trxConsumer.Consume(context.Background())
 
-	walletRepo := data.NewPostgresWalletRepository(dbConn)
-	jwtUtil := jwt.NewJWTUtil(os.Getenv("JWT_KEY"))
-	walletSvc := service.NewWalletService(walletRepo, jwtUtil)
+	tsxRepo := data.NewPostgresTransactionRepository(dbConn)
+	tsxSvc := service.NewTransactionService(tsxRepo, trxProducer)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", gRPC_PORT))
 	if err != nil {
@@ -45,9 +48,9 @@ func main() {
 	}
 
 	s := grpc.NewServer()
-	pb.RegisterWalletServiceServer(s, walletSvc)
+	pb.RegisterTransactionServiceServer(s, tsxSvc)
 
-	log.Printf("Wallet service running on :%s", gRPC_PORT)
+	log.Printf("Transaction service running on :%s", gRPC_PORT)
 	if err := s.Serve(lis); err != nil {
 		log.Fatal(err)
 	}
@@ -77,6 +80,7 @@ func connectToDB() *sql.DB {
 	for {
 		connection, err := openDB(dsn)
 		if err != nil {
+			log.Println(err)
 			log.Println("Postgres not yet ready...")
 			counts++
 		} else {

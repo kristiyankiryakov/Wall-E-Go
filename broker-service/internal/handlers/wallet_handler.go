@@ -12,6 +12,8 @@ import (
 )
 
 type WalletHandler interface {
+	CreateWallet(c *gin.Context)
+	ViewBalance(c *gin.Context)
 }
 
 type WalletHandlerImpl struct {

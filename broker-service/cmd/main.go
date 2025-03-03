@@ -22,10 +22,15 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	transactionClient, err := clients.NewTransactionClient(os.Getenv("TRANSACTION_HOST"))
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authClient)
 	walletHandler := handlers.NewWalletHandler(walletClient)
+	transactionHandler := handlers.NewTransactionHandler(transactionClient)
 
 	r := gin.Default()
 
@@ -40,10 +45,10 @@ func main() {
 		walletGroup.POST("/create", walletHandler.CreateWallet)
 		walletGroup.GET("/view", walletHandler.ViewBalance)
 	}
-	// txGroup := r.Group("/transaction")
-	// {
-	// txGroup.PUT("/deposit")
-	// }
+	txGroup := r.Group("/transaction")
+	{
+		txGroup.PUT("/deposit", transactionHandler.Deposit)
+	}
 
 	log.Println("Broker service running on :8080")
 	if err := r.Run(":8080"); err != nil {

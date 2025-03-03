@@ -1,7 +1,7 @@
 services:
 
 # Broker Service
-  broker:
+  api-gateway:
     build:
       context: ./broker-service
       dockerfile: ./broker-service.dockerfile
@@ -10,6 +10,7 @@ services:
     environment:
       - AUTH_HOST=auth:50051
       - WALLET_HOST=wallet:50052
+      - TRANSACTION_HOST=transaction:50053
     networks:
       - myapp-network
 
@@ -50,6 +51,7 @@ services:
   wallet:
     depends_on:
       - wallet-db
+      - kafka
     build:
       context: ./wallet-service
       dockerfile: ./wallet-service.dockerfile
@@ -80,9 +82,92 @@ services:
     networks:
       - myapp-network
 
+  # Transaction Service
+  transaction:
+    depends_on:
+      kafka:
+        condition: service_healthy
+    build:
+      context: ./transaction-service
+      dockerfile: ./transaction-service.dockerfile
+    ports:
+      - "50053:50053"
+    environment:
+      DSN: "host=transaction-db port=5432 user=user password=password dbname=transaction_db sslmode=disable timezone=UTC connect_timeout=5"
+      TRANSACTION_PORT: "50053"
+    networks:
+      - myapp-network
+
+# Transaction Database 
+  transaction-db:
+    image: 'postgres:14.2'
+    ports:
+      - "5435:5432"
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: transaction_db
+    volumes:
+      - ./transaction-service/transaction-data/postgres/:/var/lib/postgresql/data/
+      - ./transaction-service/migrations:/migrations
+    networks:
+      - myapp-network
+      
+# ZooKeeper (for Kafka)
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.3.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
+      - zookeeper-logs:/var/lib/zookeeper/log
+    networks:
+      - myapp-network
+
+# Kafka
+  kafka:
+    image: confluentinc/cp-kafka:7.3.0
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server kafka:9092 --list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s    
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_LOG_RETENTION_MS: 86400000
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 100
+    networks:
+      - myapp-network
+
 volumes:
   auth-data:
   wallet-data:
+  transaction-data:
+  zookeeper-data:
+  zookeeper-logs:
+  kafka-data:
 
 networks:
   myapp-network:
