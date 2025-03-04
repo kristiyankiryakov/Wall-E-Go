@@ -31,7 +31,7 @@ func main() {
 	}
 	defer dbConn.Close()
 
-	trxConsumer := kafka.NewConsumer(dbConn)
+	trxConsumer := kafka.NewConsumer(dbConn, DEPOSIT_INITIATED, DEPOSIT_COMPLETED)
 	//runs in a goroutine
 	go trxConsumer.Consume(context.Background())
 

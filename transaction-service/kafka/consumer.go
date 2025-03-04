@@ -14,11 +14,11 @@ type Consumer struct {
 	db     *sql.DB
 }
 
-func NewConsumer(db *sql.DB) *Consumer {
+func NewConsumer(db *sql.DB, topic string) *Consumer {
 	return &Consumer{
 		reader: kafka.NewReader(kafka.ReaderConfig{
 			Brokers: []string{"kafka:9092"},
-			Topic:   "deposit-completed",
+			Topic:   topic,
 			GroupID: "transaction-group",
 		}),
 		db: db,

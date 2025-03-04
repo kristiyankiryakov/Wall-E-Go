@@ -30,15 +30,15 @@ func main() {
 	}
 	defer dbConn.Close()
 
-	topics := []string{"deposit-initiated", "deposit-completed"}
+	topics := []string{DEPOSIT_INITIATED, DEPOSIT_COMPLETED}
 	if err := ensureTopics(topics); err != nil {
 		log.Fatalf("Failed to ensure Kafka topics: %v", err)
 	}
 
-	trxProducer := kafka.NewProducer()
+	trxProducer := kafka.NewProducer(DEPOSIT_INITIATED)
 	defer trxProducer.Close()
 
-	trxConsumer := kafka.NewConsumer(dbConn)
+	trxConsumer := kafka.NewConsumer(dbConn, DEPOSIT_COMPLETED)
 	defer trxConsumer.Close()
 
 	//runs in a goroutine

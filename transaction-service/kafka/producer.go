@@ -14,10 +14,10 @@ type Producer struct {
 	writer *kafka.Writer
 }
 
-func NewProducer() *Producer {
+func NewProducer(topic string) *Producer {
 	writer := &kafka.Writer{
 		Addr:     kafka.TCP("kafka:9092"),
-		Topic:    "deposit-initiated",
+		Topic:    topic,
 		Balancer: &kafka.LeastBytes{},
 
 		BatchTimeout: 50 * time.Millisecond,

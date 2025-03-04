@@ -8,6 +8,11 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
+const (
+	DEPOSIT_INITIATED string = "deposit_initiated"
+	DEPOSIT_COMPLETED string = "deposit_completed"
+)
+
 // ensureTopics ensures the specified Kafka topics exist, creating them if necessary.
 func ensureTopics(topics []string) error {
 	// Connect to Kafka leader to manage topics

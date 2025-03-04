@@ -16,17 +16,17 @@ type Consumer struct {
 	writer *kafka.Writer
 }
 
-func NewConsumer(db *sql.DB) *Consumer {
+func NewConsumer(db *sql.DB, readerTopic string, writerTopic string) *Consumer {
 	return &Consumer{
 		reader: kafka.NewReader(kafka.ReaderConfig{
 			Brokers: []string{"kafka:9092"},
-			Topic:   "deposit-initiated",
+			Topic:   readerTopic,
 			GroupID: "wallet-group",
 		}),
 		db: db,
 		writer: &kafka.Writer{
 			Addr:     kafka.TCP("kafka:9092"),
-			Topic:    "deposit-completed",
+			Topic:    writerTopic,
 			Balancer: &kafka.LeastBytes{},
 		},
 	}
