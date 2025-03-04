@@ -32,7 +32,7 @@ func (c *Consumer) Consume(ctx context.Context) {
 			log.Println("Failed to read Kafka message:", err)
 			continue
 		}
-		log.Println("received message:", string(msg.Value))
+
 		var event struct {
 			TransactionID int64 `json:"transaction_id"`
 		}
@@ -41,8 +41,6 @@ func (c *Consumer) Consume(ctx context.Context) {
 			continue
 		}
 
-		// Mark as Completed
-		log.Println("should update status", event.TransactionID)
 		_, err = c.db.ExecContext(ctx,
 			`UPDATE transactions SET status = 'COMPLETED' WHERE id = $1 AND status = 'PENDING'`,
 			event.TransactionID)

@@ -24,7 +24,6 @@ func NewJWTUtil(secretKey string) *JWTUtilImpl {
 }
 
 func (j *JWTUtilImpl) ValidateToken(token string) (int, error) {
-	log.Println("Token received:", token)
 	claims := &jwt.MapClaims{}
 	parsedToken, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {

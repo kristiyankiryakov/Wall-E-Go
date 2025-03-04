@@ -52,7 +52,6 @@ func (c *Consumer) Consume(ctx context.Context) {
 			log.Println("Failed to unmarshal event:", err)
 			continue
 		}
-		log.Printf("transaction ID received : %d", event.TransactionID)
 
 		// Update balance
 		_, err = c.db.ExecContext(ctx,
