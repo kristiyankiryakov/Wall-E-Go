@@ -1,10 +1,10 @@
 services:
 
-# Broker Service
+# Api-Gateway
   api-gateway:
     build:
-      context: ./broker-service
-      dockerfile: ./broker-service.dockerfile
+      context: ./api-gateway
+      dockerfile: ./Dockerfile.dev
     ports:
       - "8080:8080"
     environment:
@@ -20,7 +20,7 @@ services:
       - auth-db
     build:
       context: ./auth-service
-      dockerfile: ./auth-service.dockerfile
+      dockerfile: ./Dockerfile.dev
     ports:
       - "50051:50051"
     environment:
@@ -54,7 +54,7 @@ services:
       - kafka
     build:
       context: ./wallet-service
-      dockerfile: ./wallet-service.dockerfile
+      dockerfile: ./Dockerfile.dev
     ports:
       - "50052:50052"
     environment:
@@ -89,7 +89,9 @@ services:
         condition: service_healthy
     build:
       context: ./transaction-service
-      dockerfile: ./transaction-service.dockerfile
+      dockerfile: ./Dockerfile.dev
+    volumes:
+      - ./transaction-service:/app
     ports:
       - "50053:50053"
     environment:

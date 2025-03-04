@@ -50,7 +50,7 @@ func main() {
 	s := grpc.NewServer()
 	pb.RegisterTransactionServiceServer(s, tsxSvc)
 
-	log.Printf("Transaction service running on :%s", gRPC_PORT)
+	log.Printf("Transaction service running on port :%s", gRPC_PORT)
 	if err := s.Serve(lis); err != nil {
 		log.Fatal(err)
 	}
