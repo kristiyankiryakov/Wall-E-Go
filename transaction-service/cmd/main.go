@@ -30,6 +30,11 @@ func main() {
 	}
 	defer dbConn.Close()
 
+	topics := []string{"deposit-initiated", "deposit-completed"}
+	if err := ensureTopics(topics); err != nil {
+		log.Fatalf("Failed to ensure Kafka topics: %v", err)
+	}
+
 	trxProducer := kafka.NewProducer()
 	defer trxProducer.Close()
 
