@@ -3,12 +3,10 @@ package handlers
 import (
 	"broker-service/internal/clients"
 	"broker-service/internal/utils"
-	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"google.golang.org/grpc/metadata"
 )
 
 type WalletHandler interface {
@@ -34,14 +32,8 @@ func (h *WalletHandlerImpl) CreateWallet(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
 		return
 	}
-	// Extract JWT from HTTP Header
-	authHeader := c.Request.Header.Get("Authorization")
-	if authHeader == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing token"})
-		return
-	}
 
-	ctx := metadata.AppendToOutgoingContext(c.Request.Context(), "authorization", authHeader)
+	ctx := c.Request.Context()
 
 	walletID, err := h.walletClient.CreateWallet(ctx, req.Name)
 	if err != nil {
@@ -53,22 +45,15 @@ func (h *WalletHandlerImpl) CreateWallet(c *gin.Context) {
 }
 
 func (h *WalletHandlerImpl) ViewBalance(c *gin.Context) {
-	walletIDParam := c.Query("walletID")
-	if walletIDParam == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("invalid or missing walletID: %v", walletIDParam)})
-		return
-	}
-	walletID, err := strconv.ParseInt(walletIDParam, 10, 64)
+	walletID, err := strconv.Atoi(c.Query("walletID"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("error parsing walletID: %v", walletIDParam)})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "error converting walletID"})
 		return
 	}
 
-	// Extract JWT from HTTP Header
-	authHeader := c.Request.Header.Get("Authorization")
-	ctx := metadata.AppendToOutgoingContext(c.Request.Context(), "authorization", authHeader)
+	ctx := c.Request.Context()
 
-	response, err := h.walletClient.ViewBalance(ctx, walletID)
+	response, err := h.walletClient.ViewBalance(ctx, int64(walletID))
 	if err != nil {
 		utils.HandleGRPCError(c, err)
 		return

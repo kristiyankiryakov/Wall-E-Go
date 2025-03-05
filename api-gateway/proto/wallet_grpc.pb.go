@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v3.12.4
-// source: broker-service/proto/wallet.proto
+// source: wallet.proto
 
 package proto
 
@@ -19,8 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	WalletService_CreateWallet_FullMethodName = "/wallet.WalletService/CreateWallet"
-	WalletService_ViewBalance_FullMethodName  = "/wallet.WalletService/ViewBalance"
+	WalletService_CreateWallet_FullMethodName  = "/wallet.WalletService/CreateWallet"
+	WalletService_ViewBalance_FullMethodName   = "/wallet.WalletService/ViewBalance"
+	WalletService_IsWalletOwner_FullMethodName = "/wallet.WalletService/IsWalletOwner"
 )
 
 // WalletServiceClient is the client API for WalletService service.
@@ -29,6 +30,7 @@ const (
 type WalletServiceClient interface {
 	CreateWallet(ctx context.Context, in *CreateWalletRequest, opts ...grpc.CallOption) (*CreateWalletResponse, error)
 	ViewBalance(ctx context.Context, in *ViewBalanceRequest, opts ...grpc.CallOption) (*ViewBalanceResponse, error)
+	IsWalletOwner(ctx context.Context, in *IsOwnerRequest, opts ...grpc.CallOption) (*IsOwnerResponse, error)
 }
 
 type walletServiceClient struct {
@@ -59,12 +61,23 @@ func (c *walletServiceClient) ViewBalance(ctx context.Context, in *ViewBalanceRe
 	return out, nil
 }
 
+func (c *walletServiceClient) IsWalletOwner(ctx context.Context, in *IsOwnerRequest, opts ...grpc.CallOption) (*IsOwnerResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(IsOwnerResponse)
+	err := c.cc.Invoke(ctx, WalletService_IsWalletOwner_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // WalletServiceServer is the server API for WalletService service.
 // All implementations must embed UnimplementedWalletServiceServer
 // for forward compatibility.
 type WalletServiceServer interface {
 	CreateWallet(context.Context, *CreateWalletRequest) (*CreateWalletResponse, error)
 	ViewBalance(context.Context, *ViewBalanceRequest) (*ViewBalanceResponse, error)
+	IsWalletOwner(context.Context, *IsOwnerRequest) (*IsOwnerResponse, error)
 	mustEmbedUnimplementedWalletServiceServer()
 }
 
@@ -80,6 +93,9 @@ func (UnimplementedWalletServiceServer) CreateWallet(context.Context, *CreateWal
 }
 func (UnimplementedWalletServiceServer) ViewBalance(context.Context, *ViewBalanceRequest) (*ViewBalanceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ViewBalance not implemented")
+}
+func (UnimplementedWalletServiceServer) IsWalletOwner(context.Context, *IsOwnerRequest) (*IsOwnerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IsWalletOwner not implemented")
 }
 func (UnimplementedWalletServiceServer) mustEmbedUnimplementedWalletServiceServer() {}
 func (UnimplementedWalletServiceServer) testEmbeddedByValue()                       {}
@@ -138,6 +154,24 @@ func _WalletService_ViewBalance_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _WalletService_IsWalletOwner_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IsOwnerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WalletServiceServer).IsWalletOwner(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WalletService_IsWalletOwner_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WalletServiceServer).IsWalletOwner(ctx, req.(*IsOwnerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // WalletService_ServiceDesc is the grpc.ServiceDesc for WalletService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -153,7 +187,11 @@ var WalletService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "ViewBalance",
 			Handler:    _WalletService_ViewBalance_Handler,
 		},
+		{
+			MethodName: "IsWalletOwner",
+			Handler:    _WalletService_IsWalletOwner_Handler,
+		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "broker-service/proto/wallet.proto",
+	Metadata: "wallet.proto",
 }

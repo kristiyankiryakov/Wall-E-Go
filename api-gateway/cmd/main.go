@@ -3,6 +3,7 @@ package main
 import (
 	"broker-service/internal/clients"
 	"broker-service/internal/handlers"
+	"broker-service/internal/middleware"
 	"log"
 	"os"
 
@@ -40,12 +41,18 @@ func main() {
 		authGroup.POST("/register", authHandler.Register)
 	}
 
-	walletGroup := r.Group("/wallet")
 	{
-		walletGroup.POST("/create", walletHandler.CreateWallet)
-		walletGroup.GET("/view", walletHandler.ViewBalance)
+		r.POST("/create", middleware.AuthenticateUser(), middleware.AppendUserIDToGrpcContext(), walletHandler.CreateWallet)
 	}
+
+	protectedWalletGroup := r.Group("/wallet")
+	protectedWalletGroup.Use(middleware.AuthenticateUser(), middleware.AppendUserIDToGrpcContext())
+	{
+		protectedWalletGroup.GET("/view", walletHandler.ViewBalance)
+	}
+
 	txGroup := r.Group("/transaction")
+	txGroup.Use(middleware.AuthenticateWalletOwner(walletClient), middleware.AppendUserIDToGrpcContext())
 	{
 		txGroup.PUT("/deposit", transactionHandler.Deposit)
 	}

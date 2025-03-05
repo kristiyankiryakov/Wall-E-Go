@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"log"
+	"strconv"
 	walletpb "wallet-service/proto"
 
 	"wallet-service/internal/data"
@@ -15,6 +17,8 @@ import (
 type WalletService interface {
 	CreateWallet(ctx context.Context, req *walletpb.CreateWalletRequest) (*walletpb.CreateWalletResponse, error)
 	ViewBalance(ctx context.Context, req *walletpb.ViewBalanceRequest) (*walletpb.ViewBalanceResponse, error)
+
+	IsWalletOwner(ctx context.Context, req *walletpb.IsOwnerRequest) (*walletpb.IsOwnerResponse, error)
 }
 
 type WalletServiceImpl struct {
@@ -32,8 +36,7 @@ func NewWalletService(walletRepo data.WalletRepository, jwtUtil jwt.JWTUtil) *Wa
 
 func (s *WalletServiceImpl) CreateWallet(ctx context.Context, req *walletpb.CreateWalletRequest) (*walletpb.CreateWalletResponse, error) {
 	var newWallet data.Wallet
-
-	userID, err := s.extractUserIdAndValidateToken(ctx)
+	userID, err := s.extractUserIDFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +64,7 @@ func (s *WalletServiceImpl) CreateWallet(ctx context.Context, req *walletpb.Crea
 }
 
 func (s *WalletServiceImpl) ViewBalance(ctx context.Context, req *walletpb.ViewBalanceRequest) (*walletpb.ViewBalanceResponse, error) {
-	userID, err := s.extractUserIdAndValidateToken(ctx)
+	userID, err := s.extractUserIDFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -78,8 +81,21 @@ func (s *WalletServiceImpl) ViewBalance(ctx context.Context, req *walletpb.ViewB
 
 }
 
+func (s *WalletServiceImpl) IsWalletOwner(ctx context.Context, req *walletpb.IsOwnerRequest) (*walletpb.IsOwnerResponse, error) {
+	wallet, err := s.getWalletByUserAndWalletID(req.GetUserId(), req.GetWalletId())
+	if err != nil {
+		return nil, err
+	}
+
+	isValid := wallet != nil
+
+	return &walletpb.IsOwnerResponse{
+		Valid: isValid,
+	}, nil
+}
+
 func (s *WalletServiceImpl) getWalletByUserAndWalletID(userID, walletID int64) (*data.Wallet, error) {
-	wallet, err := s.walletRepo.GetByUserIdAndWalletID(int64(userID), walletID)
+	wallet, err := s.walletRepo.GetByUserIdAndWalletID(userID, walletID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "error getting wallet: %v", err)
 	}
@@ -90,27 +106,17 @@ func (s *WalletServiceImpl) getWalletByUserAndWalletID(userID, walletID int64) (
 	return wallet, nil
 }
 
-func (s *WalletServiceImpl) extractUserIdAndValidateToken(ctx context.Context) (int64, error) {
-
-	// Extract token from gRPC metadata
+func (s *WalletServiceImpl) extractUserIDFromContext(ctx context.Context) (int64, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok || len(md["authorization"]) == 0 {
-		return 0, status.Errorf(codes.Unauthenticated, "authorization header is missing")
+	if !ok {
+		log.Println("err metadata receive")
+		return 0, status.Errorf(codes.Internal, "error receiving metadata")
 	}
-
-	authHeader := md["authorization"][0]
-	token := authHeader
-	if len(authHeader) > 7 && authHeader[:7] == "Bearer " {
-		token = authHeader[7:]
-	}
-
-	// Validate token and get user_id
-	userID, err := s.jwtUtil.ValidateToken(token)
+	extracted := md.Get("userID")[0]
+	userID, err := strconv.Atoi(extracted)
 	if err != nil {
-		return 0, status.Errorf(codes.Unauthenticated, "invalid token : %v", err)
-	}
-	if userID == 0 {
-		return 0, status.Errorf(codes.Internal, "error processing token")
+		log.Println(err)
+		return 0, status.Errorf(codes.Internal, "error converting userID's type")
 	}
 
 	return int64(userID), nil

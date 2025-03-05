@@ -7,10 +7,13 @@ services:
       dockerfile: ./Dockerfile.dev
     ports:
       - "8080:8080"
+    volumes:
+      - ./api-gateway:/app
     environment:
       - AUTH_HOST=auth:50051
       - WALLET_HOST=wallet:50052
       - TRANSACTION_HOST=transaction:50053
+      - JWT_KEY=MIGbMBAGByqGSM49AgEGBSuBBAAjA4GGAAQAwczAzq0G4TRw8Qj69FRxnuV380IQ #should be hidden in prod!!!
     networks:
       - myapp-network
 
@@ -23,6 +26,8 @@ services:
       dockerfile: ./Dockerfile.dev
     ports:
       - "50051:50051"
+    volumes:
+      - ./auth-service:/app
     environment:
       JWT_KEY: MIGbMBAGByqGSM49AgEGBSuBBAAjA4GGAAQAwczAzq0G4TRw8Qj69FRxnuV380IQ #should be hidden in prod!!!
       DSN: "host=auth-db port=5432 user=user password=password dbname=auth_service sslmode=disable timezone=UTC connect_timeout=5"
@@ -55,10 +60,11 @@ services:
     build:
       context: ./wallet-service
       dockerfile: ./Dockerfile.dev
+    volumes:
+      - ./wallet-service:/app
     ports:
       - "50052:50052"
     environment:
-      JWT_KEY: MIGbMBAGByqGSM49AgEGBSuBBAAjA4GGAAQAwczAzq0G4TRw8Qj69FRxnuV380IQ #should be hidden in prod!!!
       DSN: "host=wallet-db port=5432 user=user password=password dbname=wallet_db sslmode=disable timezone=UTC connect_timeout=5"
       WALLET_PORT: "50052"
     networks:

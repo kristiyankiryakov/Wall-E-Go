@@ -46,3 +46,15 @@ func (c *WalletClient) ViewBalance(ctx context.Context, walletID int64) (*models
 		Balance: resp.GetBalance(),
 	}, nil
 }
+
+func (c *WalletClient) IsWalletOwner(ctx context.Context, userID, walletID int) (bool, error) {
+	resp, err := c.client.IsWalletOwner(ctx, &walletpb.IsOwnerRequest{
+		WalletId: int64(walletID),
+		UserId:   int64(userID),
+	})
+	if err != nil {
+		return false, err
+	}
+
+	return resp.GetValid(), nil
+}

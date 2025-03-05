@@ -5,6 +5,7 @@ option go_package = "./proto";
 service WalletService {
   rpc CreateWallet (CreateWalletRequest) returns (CreateWalletResponse);
   rpc ViewBalance (ViewBalanceRequest) returns (ViewBalanceResponse);
+  rpc IsWalletOwner (IsOwnerRequest) returns (IsOwnerResponse);
 }
 
 message ViewBalanceRequest{
@@ -22,4 +23,13 @@ message CreateWalletRequest {
 
 message CreateWalletResponse{
     int64 wallet_id = 1;
+}
+
+message IsOwnerRequest{
+  int64 user_id = 1;
+  int64 wallet_id = 2;
+}
+
+message IsOwnerResponse{
+  bool valid = 1;
 }

@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"google.golang.org/grpc/metadata"
 )
 
 type TransactionHandler interface {
@@ -32,14 +31,7 @@ func (h *TransactionHandlerImpl) Deposit(c *gin.Context) {
 		return
 	}
 
-	// Extract JWT from HTTP Header
-	authHeader := c.Request.Header.Get("Authorization")
-	if authHeader == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing token"})
-		return
-	}
-
-	ctx := metadata.AppendToOutgoingContext(c.Request.Context(), "authorization", authHeader)
+	ctx := c.Request.Context()
 
 	txID, err := h.transactionClient.Deposit(ctx, req)
 	if err != nil {
