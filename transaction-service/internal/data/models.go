@@ -17,9 +17,3 @@ type Transaction struct {
 	IdempotencyKey string          `json:"idempotency_key"`
 	CreatedAt      time.Time       `json:"created_at"`
 }
-
-type DepositRequest struct {
-	WalletID       int64   `json:"wallet_id"`
-	Amount         float64 `json:"amount"`
-	IdempotencyKey string  `json:"idempotency_key"`
-}

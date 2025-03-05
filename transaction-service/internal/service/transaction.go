@@ -6,6 +6,8 @@ import (
 	"transaction-service/internal/data"
 	"transaction-service/kafka"
 	pb "transaction-service/proto"
+
+	"github.com/kristiyankiryakov/Wall-E-Go-Common/dto"
 )
 
 type TransactionService interface {
@@ -26,8 +28,8 @@ func NewTransactionService(transactionRepo data.TransactionRepository, transacti
 }
 
 func (s *TransactionServiceImpl) Deposit(ctx context.Context, req *pb.DepositRequest) (*pb.DepositResponse, error) {
-	deposit := data.DepositRequest{
-		WalletID:       req.WalletId,
+	deposit := dto.DepositRequest{
+		WalletID:       &req.WalletId,
 		Amount:         req.Amount,
 		IdempotencyKey: req.IdempotencyKey,
 	}
@@ -51,7 +53,7 @@ func (s *TransactionServiceImpl) Deposit(ctx context.Context, req *pb.DepositReq
 	//TODO: Add Race condition- idempotency key handling...
 
 	// Step 3: Publish to Kafka
-	err = s.producer.PublishDepositInitiated(ctx, deposit.WalletID, deposit.Amount, txID)
+	err = s.producer.PublishDepositInitiated(ctx, *deposit.WalletID, deposit.Amount, txID)
 	if err != nil {
 		log.Println("Failed to publish to Kafka:", err)
 		return nil, err

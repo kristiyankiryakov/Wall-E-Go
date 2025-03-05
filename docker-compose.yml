@@ -47,7 +47,7 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: auth_service
     volumes:
-      - ./auth-service/auth-data/postgres/:/var/lib/postgresql/data/
+      - auth-db-data:/var/lib/postgresql/data/
       - ./auth-service/migrations:/migrations
     networks:
       - myapp-network
@@ -83,7 +83,7 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: wallet_db
     volumes:
-      - ./wallet-service/wallet-data/postgres/:/var/lib/postgresql/data/
+      - wallet-db-data:/var/lib/postgresql/data/
       - ./wallet-service/migrations:/migrations
     networks:
       - myapp-network
@@ -119,7 +119,7 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: transaction_db
     volumes:
-      - ./transaction-service/transaction-data/postgres/:/var/lib/postgresql/data/
+      - transaction-db-data:/var/lib/postgresql/data/
       - ./transaction-service/migrations:/migrations
     networks:
       - myapp-network
@@ -170,9 +170,9 @@ services:
       - myapp-network
 
 volumes:
-  auth-data:
-  wallet-data:
-  transaction-data:
+  auth-db-data:
+  wallet-db-data:
+  transaction-db-data:
   zookeeper-data:
   zookeeper-logs:
   kafka-data:

@@ -21,6 +21,7 @@ require (
 	github.com/jackc/pgproto3/v2 v2.3.3 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
 	github.com/jackc/pgx/v4 v4.18.3
+	github.com/kristiyankiryakov/Wall-E-Go-Common v0.0.0-20250305132626-a99952569d68
 	github.com/segmentio/kafka-go v0.4.47
 	golang.org/x/crypto v0.30.0 // indirect
 	golang.org/x/text v0.21.0 // indirect

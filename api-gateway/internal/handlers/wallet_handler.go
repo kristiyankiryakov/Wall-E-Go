@@ -47,7 +47,7 @@ func (h *WalletHandlerImpl) CreateWallet(c *gin.Context) {
 func (h *WalletHandlerImpl) ViewBalance(c *gin.Context) {
 	walletID, err := strconv.Atoi(c.Query("walletID"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "error converting walletID"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "error handling walletID"})
 		return
 	}
 

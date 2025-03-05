@@ -1,7 +1,8 @@
 package clients
 
 import (
-	"broker-service/internal/models"
+	"github.com/kristiyankiryakov/Wall-E-Go-Common/dto"
+
 	txpb "broker-service/proto"
 	"context"
 	"log"
@@ -22,9 +23,9 @@ func NewTransactionClient(addr string) (*TransactionClient, error) {
 	return &TransactionClient{client: txpb.NewTransactionServiceClient(conn)}, nil
 }
 
-func (c *TransactionClient) Deposit(ctx context.Context, req models.DepositRequest) (int64, error) {
+func (c *TransactionClient) Deposit(ctx context.Context, req dto.DepositRequest) (int64, error) {
 	resp, err := c.client.Deposit(ctx, &txpb.DepositRequest{
-		WalletId:       req.WalletID,
+		WalletId:       *req.WalletID,
 		Amount:         req.Amount,
 		IdempotencyKey: req.IdempotencyKey,
 	})

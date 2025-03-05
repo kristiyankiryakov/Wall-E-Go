@@ -1,7 +1,8 @@
 package clients
 
 import (
-	"broker-service/internal/models"
+	"github.com/kristiyankiryakov/Wall-E-Go-Common/dto"
+
 	walletpb "broker-service/proto"
 	"context"
 	"log"
@@ -33,7 +34,7 @@ func (c *WalletClient) CreateWallet(ctx context.Context, walletName string) (int
 	return resp.WalletId, nil
 }
 
-func (c *WalletClient) ViewBalance(ctx context.Context, walletID int64) (*models.ViewBalanceResponse, error) {
+func (c *WalletClient) ViewBalance(ctx context.Context, walletID int64) (*dto.ViewBalanceResponse, error) {
 	resp, err := c.client.ViewBalance(ctx, &walletpb.ViewBalanceRequest{
 		WalletId: walletID,
 	})
@@ -41,7 +42,7 @@ func (c *WalletClient) ViewBalance(ctx context.Context, walletID int64) (*models
 		return nil, err
 	}
 
-	return &models.ViewBalanceResponse{
+	return &dto.ViewBalanceResponse{
 		Name:    resp.GetName(),
 		Balance: resp.GetBalance(),
 	}, nil
