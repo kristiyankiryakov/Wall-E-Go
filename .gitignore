@@ -26,6 +26,6 @@ go.work.sum
 *auth-data
 *wallet-data
 *transaction-data
-
+*tmp
 # env file
 .env
