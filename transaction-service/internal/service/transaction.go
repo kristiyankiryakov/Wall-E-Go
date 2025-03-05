@@ -8,6 +8,8 @@ import (
 	pb "transaction-service/proto"
 
 	"github.com/kristiyankiryakov/Wall-E-Go-Common/dto"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type TransactionService interface {
@@ -32,6 +34,10 @@ func (s *TransactionServiceImpl) Deposit(ctx context.Context, req *pb.DepositReq
 		WalletID:       &req.WalletId,
 		Amount:         req.Amount,
 		IdempotencyKey: req.IdempotencyKey,
+	}
+
+	if req.Amount <= 0 {
+		return nil, status.Errorf(codes.FailedPrecondition, "amount must be positive")
 	}
 
 	// Step 1: Check if the idempotency key already exists
