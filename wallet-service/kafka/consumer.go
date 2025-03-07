@@ -46,8 +46,6 @@ func (c *Consumer) Consume(ctx context.Context) {
 			TransactionID int64   `json:"transaction_id"`
 		}
 
-		log.Println(string(msg.Value))
-
 		if err := json.Unmarshal(msg.Value, &event); err != nil {
 			log.Println("Failed to unmarshal event:", err)
 			continue
