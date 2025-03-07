@@ -34,7 +34,7 @@ func (h *TransactionHandlerImpl) Deposit(c *gin.Context) {
 
 	walletID, err := strconv.Atoi(c.Query("walletID"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "error handling walletID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "error handling walletID"})
 		return
 	}
 	convertedWalletID := int64(walletID)
