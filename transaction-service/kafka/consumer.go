@@ -34,7 +34,7 @@ func (c *Consumer) Consume(ctx context.Context) {
 		}
 
 		var event struct {
-			TransactionID int64 `json:"transaction_id"`
+			TransactionID string `json:"transaction_id"`
 		}
 		if err := json.Unmarshal(msg.Value, &event); err != nil {
 			log.Println("Failed to unmarshal event:", err)

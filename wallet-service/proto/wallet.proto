@@ -9,7 +9,7 @@ service WalletService {
 }
 
 message ViewBalanceRequest{
-  int64 wallet_id = 1;
+  string wallet_id = 1;
 }
 
 message ViewBalanceResponse {
@@ -22,12 +22,12 @@ message CreateWalletRequest {
 }
 
 message CreateWalletResponse{
-    int64 wallet_id = 1;
+    string wallet_id = 1;
 }
 
 message IsOwnerRequest{
   int64 user_id = 1;
-  int64 wallet_id = 2;
+  string wallet_id = 2;
 }
 
 message IsOwnerResponse{

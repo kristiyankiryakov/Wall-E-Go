@@ -2,7 +2,10 @@ module transaction-service
 
 go 1.23.5
 
-require github.com/jackc/pgconn v1.14.3
+require (
+	github.com/jackc/pgconn v1.14.3
+	google.golang.org/protobuf v1.35.2
+)
 
 require (
 	github.com/jackc/pgtype v1.14.0 // indirect
@@ -11,7 +14,6 @@ require (
 	golang.org/x/net v0.32.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241202173237-19429a94021a // indirect
-	google.golang.org/protobuf v1.35.2 // indirect
 )
 
 require (
@@ -21,7 +23,6 @@ require (
 	github.com/jackc/pgproto3/v2 v2.3.3 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
 	github.com/jackc/pgx/v4 v4.18.3
-	github.com/kristiyankiryakov/Wall-E-Go-Common v0.0.0-20250305132626-a99952569d68
 	github.com/segmentio/kafka-go v0.4.47
 	golang.org/x/crypto v0.30.0 // indirect
 	golang.org/x/text v0.21.0 // indirect

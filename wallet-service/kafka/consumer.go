@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"log"
-	"strconv"
 
 	"github.com/segmentio/kafka-go"
 )
@@ -41,16 +40,16 @@ func (c *Consumer) Consume(ctx context.Context) {
 		}
 
 		var event struct {
-			WalletID      int64   `json:"wallet_id"`
+			WalletID      string  `json:"wallet_id"`
 			Amount        float64 `json:"amount"`
-			TransactionID int64   `json:"transaction_id"`
+			TransactionID string  `json:"transaction_id"`
 		}
 
 		if err := json.Unmarshal(msg.Value, &event); err != nil {
 			log.Println("Failed to unmarshal event:", err)
 			continue
 		}
-
+		log.Println(event.WalletID, event.Amount, event.TransactionID)
 		// Update balance
 		_, err = c.db.ExecContext(ctx,
 			"UPDATE wallets SET balance = balance + $1 WHERE id = $2",
@@ -61,10 +60,10 @@ func (c *Consumer) Consume(ctx context.Context) {
 		}
 
 		// Publish completion event
-		completionEvent := map[string]int64{"transaction_id": event.TransactionID}
+		completionEvent := map[string]string{"transaction_id": event.TransactionID}
 		msgBytes, _ := json.Marshal(completionEvent)
 		c.writer.WriteMessages(ctx, kafka.Message{
-			Key:   []byte(strconv.FormatInt(event.TransactionID, 10)),
+			Key:   []byte(event.TransactionID),
 			Value: msgBytes,
 		})
 	}

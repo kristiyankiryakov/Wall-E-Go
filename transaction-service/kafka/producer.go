@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"log"
-	"strconv"
 	"time"
 
 	"github.com/segmentio/kafka-go"
@@ -25,6 +24,7 @@ func NewProducer(topic string) *Producer {
 		Async:        false,
 	}
 
+	//TODO: extract into method for testing Kafka connectivity
 	for i := 0; i < 10; i++ {
 		err := writer.WriteMessages(context.Background(), kafka.Message{Value: []byte("test")})
 		if err == nil {
@@ -37,7 +37,8 @@ func NewProducer(topic string) *Producer {
 	return &Producer{writer: writer}
 }
 
-func (p *Producer) PublishDepositInitiated(ctx context.Context, walletID int64, amount float64, TransactionID int64) error {
+func (p *Producer) PublishDepositInitiated(ctx context.Context, walletID string, amount float64, TransactionID string) error {
+	log.Println("sending:", walletID, amount, TransactionID)
 	event := map[string]interface{}{
 		"wallet_id":      walletID,
 		"amount":         amount,
@@ -49,7 +50,7 @@ func (p *Producer) PublishDepositInitiated(ctx context.Context, walletID int64, 
 	}
 
 	return p.writer.WriteMessages(ctx, kafka.Message{
-		Key:   []byte(strconv.FormatInt(TransactionID, 10)),
+		Key:   []byte(TransactionID),
 		Value: msg,
 	})
 }

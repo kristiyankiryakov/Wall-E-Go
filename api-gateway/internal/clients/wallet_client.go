@@ -1,8 +1,7 @@
 package clients
 
 import (
-	"github.com/kristiyankiryakov/Wall-E-Go-Common/dto"
-
+	"broker-service/internal/models"
 	walletpb "broker-service/proto"
 	"context"
 	"log"
@@ -23,18 +22,18 @@ func NewWalletClient(addr string) (*WalletClient, error) {
 	return &WalletClient{client: walletpb.NewWalletServiceClient(conn)}, nil
 }
 
-func (c *WalletClient) CreateWallet(ctx context.Context, walletName string) (int64, error) {
+func (c *WalletClient) CreateWallet(ctx context.Context, walletName string) (string, error) {
 	resp, err := c.client.CreateWallet(ctx, &walletpb.CreateWalletRequest{
 		Name: walletName,
 	})
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 
 	return resp.WalletId, nil
 }
 
-func (c *WalletClient) ViewBalance(ctx context.Context, walletID int64) (*dto.ViewBalanceResponse, error) {
+func (c *WalletClient) ViewBalance(ctx context.Context, walletID string) (*models.ViewBalanceResponse, error) {
 	resp, err := c.client.ViewBalance(ctx, &walletpb.ViewBalanceRequest{
 		WalletId: walletID,
 	})
@@ -42,15 +41,15 @@ func (c *WalletClient) ViewBalance(ctx context.Context, walletID int64) (*dto.Vi
 		return nil, err
 	}
 
-	return &dto.ViewBalanceResponse{
+	return &models.ViewBalanceResponse{
 		Name:    resp.GetName(),
 		Balance: resp.GetBalance(),
 	}, nil
 }
 
-func (c *WalletClient) IsWalletOwner(ctx context.Context, userID, walletID int) (bool, error) {
+func (c *WalletClient) IsWalletOwner(ctx context.Context, userID int64, walletID string) (bool, error) {
 	resp, err := c.client.IsWalletOwner(ctx, &walletpb.IsOwnerRequest{
-		WalletId: int64(walletID),
+		WalletId: walletID,
 		UserId:   int64(userID),
 	})
 	if err != nil {

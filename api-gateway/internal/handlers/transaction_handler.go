@@ -2,11 +2,10 @@ package handlers
 
 import (
 	"broker-service/internal/clients"
+	"broker-service/internal/models"
 	"broker-service/internal/utils"
+	"fmt"
 	"net/http"
-	"strconv"
-
-	"github.com/kristiyankiryakov/Wall-E-Go-Common/dto"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,19 +25,12 @@ func NewTransactionHandler(transactionClient *clients.TransactionClient) *Transa
 }
 
 func (h *TransactionHandlerImpl) Deposit(c *gin.Context) {
-	var req dto.DepositRequest
+	var req models.TransactionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("invalid request : %v", err)})
 		return
 	}
-
-	walletID, err := strconv.Atoi(c.Query("walletID"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "error handling walletID"})
-		return
-	}
-	convertedWalletID := int64(walletID)
-	req.WalletID = &convertedWalletID
+	req.WalletID = c.Query("walletID")
 
 	ctx := c.Request.Context()
 
@@ -48,5 +40,5 @@ func (h *TransactionHandlerImpl) Deposit(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"transaction_id": txID})
+	c.JSON(http.StatusOK, gin.H{"transaction_id": txID, "status": "transaction initiated successfully"})
 }

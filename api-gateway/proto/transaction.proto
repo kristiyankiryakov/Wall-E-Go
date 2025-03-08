@@ -3,16 +3,15 @@ package transaction;
 option go_package = "./proto";
 
 service TransactionService {
-  rpc Deposit (DepositRequest) returns (DepositResponse);
+  rpc Deposit (TransactionRequest) returns (TransactionResponse);
 }
 
-message DepositRequest {
-  int64 wallet_id = 1;
+message TransactionRequest {
+  string wallet_id = 1;
   double amount = 2;
   string idempotency_key = 3;
 }
 
-message DepositResponse {
-  int64 transaction_id = 1;
-  double new_balance = 2;
+message TransactionResponse {
+  string transaction_id = 1;
 }

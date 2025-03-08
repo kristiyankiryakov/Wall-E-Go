@@ -4,7 +4,6 @@ import (
 	"broker-service/internal/clients"
 	"broker-service/internal/utils"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -45,15 +44,15 @@ func (h *WalletHandlerImpl) CreateWallet(c *gin.Context) {
 }
 
 func (h *WalletHandlerImpl) ViewBalance(c *gin.Context) {
-	walletID, err := strconv.Atoi(c.Query("walletID"))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "error handling walletID"})
+	walletID := c.Query("walletID")
+	if walletID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "error handling walletID"})
 		return
 	}
 
 	ctx := c.Request.Context()
 
-	response, err := h.walletClient.ViewBalance(ctx, int64(walletID))
+	response, err := h.walletClient.ViewBalance(ctx, walletID)
 	if err != nil {
 		utils.HandleGRPCError(c, err)
 		return

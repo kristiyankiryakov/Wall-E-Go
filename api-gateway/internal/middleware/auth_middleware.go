@@ -25,8 +25,6 @@ func AuthenticateWalletOwner(walletClient *clients.WalletClient) gin.HandlerFunc
 			return
 		}
 
-		log.Printf("received: %v", bearerToken)
-
 		var token string
 		if len(bearerToken) > 7 && bearerToken[:7] == "Bearer " {
 			token = bearerToken[7:]
@@ -39,19 +37,14 @@ func AuthenticateWalletOwner(walletClient *clients.WalletClient) gin.HandlerFunc
 			return
 		}
 
-		walletIDParam := c.Query("walletID")
-		if walletIDParam == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("invalid or missing walletID: %v", walletIDParam)})
+		walletID := c.Query("walletID")
+		if walletID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("invalid or missing walletID: %v", walletID)})
 			c.Abort()
 			return
 		}
-		walletID, err := strconv.Atoi(walletIDParam)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "converting walletID"})
-			c.Abort()
-		}
 
-		if ok, err := walletClient.IsWalletOwner(c, userID, walletID); !ok {
+		if ok, err := walletClient.IsWalletOwner(c, int64(userID), walletID); !ok {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			c.Abort()
 			return
@@ -138,7 +131,6 @@ func validateToken(token string) (int, error) {
 		return 0, errors.New("invalid token")
 	}
 
-	log.Println("Claims:", *claims)
 	sub, ok := (*claims)["sub"]
 	if !ok {
 		log.Println("Missing sub claim")

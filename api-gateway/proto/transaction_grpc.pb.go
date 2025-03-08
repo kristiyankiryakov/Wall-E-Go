@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v3.12.4
-// source: proto/transaction.proto
+// source: transaction.proto
 
 package proto
 
@@ -26,7 +26,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TransactionServiceClient interface {
-	Deposit(ctx context.Context, in *DepositRequest, opts ...grpc.CallOption) (*DepositResponse, error)
+	Deposit(ctx context.Context, in *TransactionRequest, opts ...grpc.CallOption) (*TransactionResponse, error)
 }
 
 type transactionServiceClient struct {
@@ -37,9 +37,9 @@ func NewTransactionServiceClient(cc grpc.ClientConnInterface) TransactionService
 	return &transactionServiceClient{cc}
 }
 
-func (c *transactionServiceClient) Deposit(ctx context.Context, in *DepositRequest, opts ...grpc.CallOption) (*DepositResponse, error) {
+func (c *transactionServiceClient) Deposit(ctx context.Context, in *TransactionRequest, opts ...grpc.CallOption) (*TransactionResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DepositResponse)
+	out := new(TransactionResponse)
 	err := c.cc.Invoke(ctx, TransactionService_Deposit_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -51,7 +51,7 @@ func (c *transactionServiceClient) Deposit(ctx context.Context, in *DepositReque
 // All implementations must embed UnimplementedTransactionServiceServer
 // for forward compatibility.
 type TransactionServiceServer interface {
-	Deposit(context.Context, *DepositRequest) (*DepositResponse, error)
+	Deposit(context.Context, *TransactionRequest) (*TransactionResponse, error)
 	mustEmbedUnimplementedTransactionServiceServer()
 }
 
@@ -62,7 +62,7 @@ type TransactionServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedTransactionServiceServer struct{}
 
-func (UnimplementedTransactionServiceServer) Deposit(context.Context, *DepositRequest) (*DepositResponse, error) {
+func (UnimplementedTransactionServiceServer) Deposit(context.Context, *TransactionRequest) (*TransactionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Deposit not implemented")
 }
 func (UnimplementedTransactionServiceServer) mustEmbedUnimplementedTransactionServiceServer() {}
@@ -87,7 +87,7 @@ func RegisterTransactionServiceServer(s grpc.ServiceRegistrar, srv TransactionSe
 }
 
 func _TransactionService_Deposit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DepositRequest)
+	in := new(TransactionRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func _TransactionService_Deposit_Handler(srv interface{}, ctx context.Context, d
 		FullMethod: TransactionService_Deposit_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TransactionServiceServer).Deposit(ctx, req.(*DepositRequest))
+		return srv.(TransactionServiceServer).Deposit(ctx, req.(*TransactionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -117,5 +117,5 @@ var TransactionService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/transaction.proto",
+	Metadata: "transaction.proto",
 }

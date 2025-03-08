@@ -7,13 +7,12 @@ import (
 	"transaction-service/kafka"
 	pb "transaction-service/proto"
 
-	"github.com/kristiyankiryakov/Wall-E-Go-Common/dto"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 type TransactionService interface {
-	Deposit(ctx context.Context, req *pb.DepositRequest) (*pb.DepositResponse, error)
+	Deposit(ctx context.Context, req *pb.TransactionRequest) (*pb.TransactionResponse, error)
 }
 
 type TransactionServiceImpl struct {
@@ -29,11 +28,11 @@ func NewTransactionService(transactionRepo data.TransactionRepository, transacti
 	}
 }
 
-func (s *TransactionServiceImpl) Deposit(ctx context.Context, req *pb.DepositRequest) (*pb.DepositResponse, error) {
-	deposit := dto.DepositRequest{
-		WalletID:       &req.WalletId,
-		Amount:         req.Amount,
-		IdempotencyKey: req.IdempotencyKey,
+func (s *TransactionServiceImpl) Deposit(ctx context.Context, req *pb.TransactionRequest) (*pb.TransactionResponse, error) {
+	deposit := data.TransactionRequest{
+		WalletID:       req.GetWalletId(),
+		Amount:         req.GetAmount(),
+		IdempotencyKey: req.GetIdempotencyKey(),
 	}
 
 	if req.Amount <= 0 {
@@ -45,9 +44,9 @@ func (s *TransactionServiceImpl) Deposit(ctx context.Context, req *pb.DepositReq
 	if err != nil {
 		return nil, err
 	}
-	if existingID != 0 {
-		log.Printf("existing transaction with ID: %d", existingID)
-		return &pb.DepositResponse{TransactionId: existingID}, nil
+	if existingID != "" {
+		log.Printf("existing transaction with ID: %v", existingID)
+		return &pb.TransactionResponse{TransactionId: existingID}, nil
 	}
 
 	// Step 2: Insert PENDING transaction
@@ -59,11 +58,11 @@ func (s *TransactionServiceImpl) Deposit(ctx context.Context, req *pb.DepositReq
 	//TODO: Add Race condition- idempotency key handling...
 
 	// Step 3: Publish to Kafka
-	err = s.producer.PublishDepositInitiated(ctx, *deposit.WalletID, deposit.Amount, txID)
+	err = s.producer.PublishDepositInitiated(ctx, deposit.WalletID, deposit.Amount, txID)
 	if err != nil {
 		log.Println("Failed to publish to Kafka:", err)
 		return nil, err
 	}
 
-	return &pb.DepositResponse{TransactionId: txID}, nil
+	return &pb.TransactionResponse{TransactionId: txID}, nil
 }

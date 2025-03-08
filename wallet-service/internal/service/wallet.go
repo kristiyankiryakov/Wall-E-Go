@@ -46,7 +46,7 @@ func (s *WalletServiceImpl) CreateWallet(ctx context.Context, req *walletpb.Crea
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "error checking for duplicate wallet: %v", err)
 	}
-	if existingWallet.ID != 0 {
+	if existingWallet.ID != "" {
 		return nil, status.Errorf(codes.AlreadyExists, "wallet with name %v already exists for user with ID: %v", req.Name, userID)
 	}
 
@@ -59,7 +59,7 @@ func (s *WalletServiceImpl) CreateWallet(ctx context.Context, req *walletpb.Crea
 	}
 
 	return &walletpb.CreateWalletResponse{
-		WalletId: int64(walletID),
+		WalletId: walletID,
 	}, nil
 }
 
@@ -94,13 +94,13 @@ func (s *WalletServiceImpl) IsWalletOwner(ctx context.Context, req *walletpb.IsO
 	}, nil
 }
 
-func (s *WalletServiceImpl) getWalletByUserAndWalletID(userID, walletID int64) (*data.Wallet, error) {
+func (s *WalletServiceImpl) getWalletByUserAndWalletID(userID int64, walletID string) (*data.Wallet, error) {
 	wallet, err := s.walletRepo.GetByUserIdAndWalletID(userID, walletID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "error getting wallet: %v", err)
 	}
-	if wallet.ID == 0 {
-		return nil, status.Errorf(codes.NotFound, "wallet with id: %d does not exists", walletID)
+	if wallet.ID == "" {
+		return nil, status.Errorf(codes.NotFound, "wallet with id: %v does not exists", walletID)
 	}
 
 	return wallet, nil

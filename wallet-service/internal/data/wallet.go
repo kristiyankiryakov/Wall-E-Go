@@ -10,10 +10,10 @@ import (
 const DB_TIMEOUT = time.Second * 10
 
 type WalletRepository interface {
-	CreateWallet(wallet Wallet) (int64, error)
+	CreateWallet(wallet Wallet) (string, error)
 
 	GetByUserIdAndWalletName(user_id int64, walletName string) (*Wallet, error)
-	GetByUserIdAndWalletID(user_id int64, walletID int64) (*Wallet, error)
+	GetByUserIdAndWalletID(user_id int64, walletID string) (*Wallet, error)
 }
 
 type PostgresWalletRepository struct {
@@ -52,7 +52,7 @@ func (r *PostgresWalletRepository) GetByUserIdAndWalletName(user_id int64, walle
 }
 
 // GetByUserIdAndWalletID returns one wallet by wallet ID and UserID
-func (r *PostgresWalletRepository) GetByUserIdAndWalletID(user_id int64, walletID int64) (*Wallet, error) {
+func (r *PostgresWalletRepository) GetByUserIdAndWalletID(user_id int64, walletID string) (*Wallet, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), DB_TIMEOUT)
 	defer cancel()
 
@@ -78,14 +78,14 @@ func (r *PostgresWalletRepository) GetByUserIdAndWalletID(user_id int64, walletI
 	return &wallet, nil
 }
 
-func (r *PostgresWalletRepository) CreateWallet(wallet Wallet) (int64, error) {
+func (r *PostgresWalletRepository) CreateWallet(wallet Wallet) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), DB_TIMEOUT)
 	defer cancel()
 
 	query := `insert into wallets (user_id, name, created_at, updated_at)
 		values ($1, $2, $3, $4) returning id`
 
-	var newID int
+	var newID string
 	err := r.db.QueryRowContext(ctx, query,
 		wallet.UserID,
 		wallet.Name,
@@ -95,8 +95,8 @@ func (r *PostgresWalletRepository) CreateWallet(wallet Wallet) (int64, error) {
 
 	if err != nil {
 		log.Println(err)
-		return 0, err
+		return "", err
 	}
 
-	return int64(newID), nil
+	return newID, nil
 }
