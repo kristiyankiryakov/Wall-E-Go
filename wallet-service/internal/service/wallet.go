@@ -99,6 +99,7 @@ func (s *WalletServiceImpl) getWalletByUserAndWalletID(userID int64, walletID st
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "error getting wallet: %v", err)
 	}
+
 	if wallet.ID == "" {
 		return nil, status.Errorf(codes.NotFound, "wallet with id: %v does not exists", walletID)
 	}

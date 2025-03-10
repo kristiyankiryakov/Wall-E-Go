@@ -35,7 +35,7 @@ func (c *Consumer) Consume(ctx context.Context) {
 	for {
 		msg, err := c.reader.ReadMessage(ctx)
 		if err != nil {
-			log.Println("Failed to read Kafka message:", err)
+			log.Printf("Failed to read Kafka message: %v", err)
 			continue
 		}
 
@@ -46,16 +46,30 @@ func (c *Consumer) Consume(ctx context.Context) {
 		}
 
 		if err := json.Unmarshal(msg.Value, &event); err != nil {
-			log.Println("Failed to unmarshal event:", err)
+			log.Printf("Failed to unmarshal event: %v", err)
 			continue
 		}
-		log.Println(event.WalletID, event.Amount, event.TransactionID)
+
+		// Start a transaction
+		tx, err := c.db.BeginTx(ctx, nil)
+		if err != nil {
+			log.Println("Failed to begin transaction:", err)
+			continue
+		}
+
 		// Update balance
-		_, err = c.db.ExecContext(ctx,
+		_, err = tx.ExecContext(ctx,
 			"UPDATE wallets SET balance = balance + $1 WHERE id = $2",
 			event.Amount, event.WalletID)
 		if err != nil {
-			log.Println("Failed to update balance:", err)
+			log.Printf("Failed to update balance: %v", err)
+			tx.Rollback()
+			continue
+		}
+
+		// Commit transaction before Kafka
+		if err := tx.Commit(); err != nil {
+			log.Printf("Failed to commit transaction: %v", err)
 			continue
 		}
 
