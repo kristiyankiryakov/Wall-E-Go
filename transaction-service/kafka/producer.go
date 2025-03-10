@@ -19,9 +19,7 @@ func NewProducer(topic string) *Producer {
 		Topic:    topic,
 		Balancer: &kafka.LeastBytes{},
 
-		BatchTimeout: 50 * time.Millisecond,
-		RequiredAcks: kafka.RequireOne,
-		Async:        false,
+		RequiredAcks: kafka.RequireAll,
 	}
 
 	//TODO: extract into method for testing Kafka connectivity
