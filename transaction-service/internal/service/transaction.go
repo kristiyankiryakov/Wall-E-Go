@@ -39,28 +39,39 @@ func (s *TransactionServiceImpl) Deposit(ctx context.Context, req *pb.Transactio
 		return nil, status.Errorf(codes.FailedPrecondition, "amount must be positive")
 	}
 
-	// Step 1: Check if the idempotency key already exists
-	existingID, err := s.transactionRepo.GetByKey(req.GetIdempotencyKey())
+	// Start a transaction
+	tx, err := s.transactionRepo.BeginTx(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback() // Roll back if not committed
+
+	// Check idempotency within transaction
+	existingID, err := s.transactionRepo.GetTxByKey(tx, req.GetIdempotencyKey())
 	if err != nil {
 		return nil, err
 	}
 	if existingID != "" {
-		log.Printf("existing transaction with ID: %v", existingID)
+		tx.Commit()
 		return &pb.TransactionResponse{TransactionId: existingID}, nil
 	}
 
-	// Step 2: Insert PENDING transaction
-	txID, err := s.transactionRepo.InsertOne(deposit)
+	// Insert PENDING transaction
+	txID, err := s.transactionRepo.InsertOne(tx, deposit)
 	if err != nil {
 		return nil, err
 	}
 
-	//TODO: Add Race condition- idempotency key handling...
+	// Commit transaction before Kafka
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
 
-	// Step 3: Publish to Kafka
+	// Publish to Kafka (non-transactional)
 	err = s.producer.PublishDepositInitiated(ctx, deposit.WalletID, deposit.Amount, txID)
 	if err != nil {
-		log.Println("Failed to publish to Kafka:", err)
+		log.Printf("Failed to publish to Kafka: %v; transaction %s is PENDING", err, txID)
+		// TODO: Mark transaction as failed in Postgres
 		return nil, err
 	}
 
