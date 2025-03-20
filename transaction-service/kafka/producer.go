@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"time"
 
 	"github.com/segmentio/kafka-go"
 )
@@ -18,6 +19,11 @@ func NewProducer(topic string) *Producer {
 		Topic:                  topic,
 		Balancer:               &kafka.LeastBytes{},
 		AllowAutoTopicCreation: true,
+
+		Compression:  kafka.Snappy,
+		BatchSize:    1000,                  //MAX
+		BatchBytes:   104857,                //1MB
+		BatchTimeout: 20 * time.Millisecond, // wait for more messages before sending
 
 		RequiredAcks: kafka.RequireAll,
 	}
