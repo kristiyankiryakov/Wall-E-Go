@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"log"
-	"time"
 
 	"github.com/segmentio/kafka-go"
 )
@@ -15,28 +14,19 @@ type Producer struct {
 
 func NewProducer(topic string) *Producer {
 	writer := &kafka.Writer{
-		Addr:     kafka.TCP("kafka:9092"),
-		Topic:    topic,
-		Balancer: &kafka.LeastBytes{},
+		Addr:                   kafka.TCP("kafka:9092"),
+		Topic:                  topic,
+		Balancer:               &kafka.LeastBytes{},
+		AllowAutoTopicCreation: true,
 
 		RequiredAcks: kafka.RequireAll,
 	}
 
-	//TODO: extract into method for testing Kafka connectivity
-	for i := 0; i < 10; i++ {
-		err := writer.WriteMessages(context.Background(), kafka.Message{Value: []byte("test")})
-		if err == nil {
-			log.Println("Successfully connected to Kafka")
-			break
-		}
-		log.Printf("Kafka not ready, retrying (%d/10): %v", i+1, err)
-		time.Sleep(5 * time.Second)
-	}
 	return &Producer{writer: writer}
 }
 
 func (p *Producer) PublishDepositInitiated(ctx context.Context, walletID string, amount float64, TransactionID string) error {
-	log.Println("sending:", walletID, amount, TransactionID)
+
 	event := map[string]interface{}{
 		"wallet_id":      walletID,
 		"amount":         amount,
@@ -44,6 +34,7 @@ func (p *Producer) PublishDepositInitiated(ctx context.Context, walletID string,
 	}
 	msg, err := json.Marshal(event)
 	if err != nil {
+		log.Printf("error marshalling message: %s", err)
 		return err
 	}
 

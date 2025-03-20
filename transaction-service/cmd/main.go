@@ -21,6 +21,11 @@ import (
 
 var gRPC_PORT = os.Getenv("TRANSACTION_PORT")
 
+const (
+	DEPOSIT_INITIATED string = "deposit_initiated"
+	DEPOSIT_COMPLETED string = "deposit_completed"
+)
+
 func main() {
 	log.Printf("Starting server on :%s...", gRPC_PORT)
 
@@ -29,11 +34,6 @@ func main() {
 		log.Panic("Can't connect to Postgres!")
 	}
 	defer dbConn.Close()
-
-	topics := []string{DEPOSIT_INITIATED, DEPOSIT_COMPLETED}
-	if err := ensureTopics(topics); err != nil {
-		log.Fatalf("Failed to ensure Kafka topics: %v", err)
-	}
 
 	trxProducer := kafka.NewProducer(DEPOSIT_INITIATED)
 	defer trxProducer.Close()
