@@ -1,6 +1,6 @@
 services:
 
-# Api-Gateway
+  # Api-Gateway
   api-gateway:
     build:
       context: ./api-gateway
@@ -17,7 +17,7 @@ services:
     networks:
       - myapp-network
 
-# Authentication Service
+  # Authentication Service
   auth:
     depends_on:
       - auth-db
@@ -51,7 +51,7 @@ services:
       - ./auth-service/migrations:/migrations
     networks:
       - myapp-network
-  
+
   # Wallet Service
   wallet:
     depends_on:
@@ -70,7 +70,7 @@ services:
     networks:
       - myapp-network
 
-# Wallet Database 
+  # Wallet Database
   wallet-db:
     image: 'postgres:14.2'
     ports:
@@ -106,7 +106,7 @@ services:
     networks:
       - myapp-network
 
-# Transaction Database 
+  # Transaction Database
   transaction-db:
     image: 'postgres:14.2'
     ports:
@@ -123,8 +123,8 @@ services:
       - ./transaction-service/migrations:/migrations
     networks:
       - myapp-network
-      
-# ZooKeeper (for Kafka)
+
+  # ZooKeeper (for Kafka)
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.0
     environment:
@@ -138,7 +138,7 @@ services:
     networks:
       - myapp-network
 
-# Kafka
+  # Kafka
   kafka:
     image: confluentinc/cp-kafka:7.3.0
     depends_on:
@@ -152,7 +152,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 15s    
+      start_period: 15s
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
