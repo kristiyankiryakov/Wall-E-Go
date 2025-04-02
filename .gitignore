@@ -8,6 +8,7 @@
 *.dll
 *.so
 *.dylib
+wallet-service
 
 # Test binary, built with `go test -c`
 *.test
