@@ -10,8 +10,8 @@ const (
 )
 
 type Transaction struct {
-	ID             int64           `json:"id"`
-	WalletID       int64           `json:"wallet_id"`
+	ID             string          `json:"id"`
+	WalletID       string          `json:"wallet_id"`
 	Amount         float64         `json:"amount"`
 	Type           TransactionType `json:"transaction_type"`
 	IdempotencyKey string          `json:"idempotency_key"`
@@ -19,7 +19,7 @@ type Transaction struct {
 }
 
 type TransactionRequest struct {
-	WalletID       string  `form:"walletID"`
+	WalletID       string  `json:"wallet_id" binding:"required"`
 	Amount         float64 `json:"amount" binding:"required"`
 	IdempotencyKey string  `json:"idempotency_key" binding:"required"`
 }

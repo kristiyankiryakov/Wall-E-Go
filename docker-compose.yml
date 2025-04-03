@@ -16,11 +16,30 @@ services:
       - JWT_KEY=MIGbMBAGByqGSM49AgEGBSuBBAAjA4GGAAQAwczAzq0G4TRw8Qj69FRxnuV380IQ #should be hidden in prod!!!
     networks:
       - myapp-network
+    depends_on:
+      - auth
+      - wallet
+      - transaction
+
+  # Authentication Migrations
+  auth-migrate:
+    image: migrate/migrate
+    volumes:
+      - ./auth-service/migrations:/migrations
+    command: ["-path", "/migrations", "-database", "postgres://user:password@auth-db:5432/auth_service?sslmode=disable", "up"]
+    depends_on:
+      auth-db:
+        condition: service_healthy
+    networks:
+      - myapp-network
 
   # Authentication Service
   auth:
     depends_on:
-      - auth-db
+      auth-migrate:
+        condition: service_completed_successfully
+      auth-db:
+        condition: service_healthy
     build:
       context: ./auth-service
       dockerfile: ./Dockerfile.dev
@@ -51,12 +70,33 @@ services:
       - ./auth-service/migrations:/migrations
     networks:
       - myapp-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d auth_service"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Wallet Migrations
+  wallet-migrate:
+    image: migrate/migrate
+    volumes:
+      - ./wallet-service/migrations:/migrations
+    command: ["-path", "/migrations", "-database", "postgres://user:password@wallet-db:5432/wallet_db?sslmode=disable", "up"]
+    depends_on:
+      wallet-db:
+        condition: service_healthy
+    networks:
+      - myapp-network
 
   # Wallet Service
   wallet:
     depends_on:
-      - wallet-db
-      - kafka
+      wallet-migrate:
+        condition: service_completed_successfully
+      wallet-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     build:
       context: ./wallet-service
       dockerfile: ./Dockerfile.dev
@@ -87,10 +127,31 @@ services:
       - ./wallet-service/migrations:/migrations
     networks:
       - myapp-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d wallet_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Transaction Migrations
+  transaction-migrate:
+    image: migrate/migrate
+    volumes:
+      - ./transaction-service/migrations:/migrations
+    command: ["-path", "/migrations", "-database", "postgres://user:password@transaction-db:5432/transaction_db?sslmode=disable", "up"]
+    depends_on:
+      transaction-db:
+        condition: service_healthy
+    networks:
+      - myapp-network
 
   # Transaction Service
   transaction:
     depends_on:
+      transaction-migrate:
+        condition: service_completed_successfully
+      transaction-db:
+        condition: service_healthy
       kafka:
         condition: service_healthy
     build:
@@ -123,6 +184,11 @@ services:
       - ./transaction-service/migrations:/migrations
     networks:
       - myapp-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d transaction_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   # ZooKeeper (for Kafka)
   zookeeper:

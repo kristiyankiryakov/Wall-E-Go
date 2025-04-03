@@ -5,7 +5,7 @@ import (
 	"log"
 	"wall-e-go/internal/data"
 	"wall-e-go/internal/jwt"
-	authpb "wall-e-go/proto"
+	"wall-e-go/proto/gen"
 
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc/codes"
@@ -13,12 +13,12 @@ import (
 )
 
 type AuthService interface {
-	RegisterUser(ctx context.Context, req *authpb.RegisterUserRequest) (*authpb.RegisterUserResponse, error)
-	Authenticate(ctx context.Context, req *authpb.AuthenticateRequest) (*authpb.AuthenticateResponse, error)
+	RegisterUser(ctx context.Context, req *gen.RegisterUserRequest) (*gen.RegisterUserResponse, error)
+	Authenticate(ctx context.Context, req *gen.AuthenticateRequest) (*gen.AuthenticateResponse, error)
 }
 
 type AuthServiceImpl struct {
-	authpb.UnimplementedAuthServiceServer
+	gen.UnimplementedAuthServiceServer
 	jwtUtil  jwt.JWTUtil
 	userRepo data.UserRepository
 }
@@ -30,7 +30,7 @@ func NewAuthService(jwtUtil jwt.JWTUtil, userRepo data.UserRepository) *AuthServ
 	}
 }
 
-func (s *AuthServiceImpl) RegisterUser(ctx context.Context, req *authpb.RegisterUserRequest) (*authpb.RegisterUserResponse, error) {
+func (s *AuthServiceImpl) RegisterUser(ctx context.Context, req *gen.RegisterUserRequest) (*gen.RegisterUserResponse, error) {
 	user := data.User{Username: req.Username, Password: req.Password}
 
 	// Check for existing user
@@ -54,7 +54,7 @@ func (s *AuthServiceImpl) RegisterUser(ctx context.Context, req *authpb.Register
 		return nil, status.Errorf(codes.Internal, "failed to create user: %v", err)
 	}
 
-	return &authpb.RegisterUserResponse{Token: token}, nil
+	return &gen.RegisterUserResponse{Token: token}, nil
 }
 
 func (s *AuthServiceImpl) handleExistingUser(username string) error {
@@ -69,7 +69,7 @@ func (s *AuthServiceImpl) handleExistingUser(username string) error {
 	return nil
 }
 
-func (s *AuthServiceImpl) Authenticate(ctx context.Context, req *authpb.AuthenticateRequest) (*authpb.AuthenticateResponse, error) {
+func (s *AuthServiceImpl) Authenticate(ctx context.Context, req *gen.AuthenticateRequest) (*gen.AuthenticateResponse, error) {
 	existingUser, err := s.userRepo.GetByUsername(req.Username)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed find user: %v", err)
@@ -84,5 +84,5 @@ func (s *AuthServiceImpl) Authenticate(ctx context.Context, req *authpb.Authenti
 		return nil, status.Errorf(codes.Internal, "failed to generate token: %v", err)
 	}
 
-	return &authpb.AuthenticateResponse{Token: token}, nil
+	return &gen.AuthenticateResponse{Token: token}, nil
 }

@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"broker-service/internal/clients"
+	"broker-service/internal/models"
 	"errors"
 	"fmt"
 	"log"
@@ -37,19 +38,20 @@ func AuthenticateWalletOwner(walletClient *clients.WalletClient) gin.HandlerFunc
 			return
 		}
 
-		walletID := c.Query("walletID")
-		if walletID == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("invalid or missing walletID: %v", walletID)})
+		var req models.TransactionRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("invalid request: %v", err)})
 			c.Abort()
 			return
 		}
 
-		if ok, err := walletClient.IsWalletOwner(c, int64(userID), walletID); !ok {
+		if ok, err := walletClient.IsWalletOwner(c, int64(userID), req.WalletID); !ok {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			c.Abort()
 			return
 		}
 
+		c.Set("transactionRequest", req)
 		c.Set("userID", userID)
 		c.Next()
 	}

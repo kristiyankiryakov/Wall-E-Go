@@ -4,7 +4,6 @@ import (
 	"broker-service/internal/clients"
 	"broker-service/internal/models"
 	"broker-service/internal/utils"
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -25,12 +24,17 @@ func NewTransactionHandler(transactionClient *clients.TransactionClient) *Transa
 }
 
 func (h *TransactionHandlerImpl) Deposit(c *gin.Context) {
-	var req models.TransactionRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("invalid request : %v", err)})
+	reqValue, exists := c.Get("transactionRequest")
+	if !exists {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "transaction request not found"})
 		return
 	}
-	req.WalletID = c.Query("walletID")
+
+	req, ok := reqValue.(models.TransactionRequest)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid transaction request type"})
+		return
+	}
 
 	ctx := c.Request.Context()
 
