@@ -1,0 +1,35 @@
+syntax = "proto3";
+package wallet;
+option go_package = "./proto";
+
+service WalletService {
+  rpc CreateWallet (CreateWalletRequest) returns (CreateWalletResponse);
+  rpc ViewBalance (ViewBalanceRequest) returns (ViewBalanceResponse);
+  rpc IsWalletOwner (IsOwnerRequest) returns (IsOwnerResponse);
+}
+
+message ViewBalanceRequest{
+  string wallet_id = 1;
+}
+
+message ViewBalanceResponse {
+  double balance = 1;
+  string name = 2;
+}
+
+message CreateWalletRequest {
+  string name = 1;
+}
+
+message CreateWalletResponse{
+    string wallet_id = 1;
+}
+
+message IsOwnerRequest{
+  int64 user_id = 1;
+  string wallet_id = 2;
+}
+
+message IsOwnerResponse{
+  bool valid = 1;
+}
