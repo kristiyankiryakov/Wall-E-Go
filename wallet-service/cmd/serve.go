@@ -2,12 +2,11 @@ package cmd
 
 import (
 	"context"
-	"wallet-service/internal/config"
-
 	"fmt"
 	"log"
 	"net"
 	"os"
+	"wallet-service/internal/config"
 	"wallet-service/internal/database"
 	"wallet-service/internal/domain/repositories"
 	"wallet-service/internal/domain/services"
@@ -22,45 +21,45 @@ import (
 	"google.golang.org/grpc"
 )
 
-var port string
+// NewServeCmd creates and returns the serve command
+func NewServeCmd() *cobra.Command {
+	var walletPort string
 
-var serveCmd = &cobra.Command{
-	Use:   "serve",
-	Short: "Start the wallet service gRPC server",
-	Run: func(cmd *cobra.Command, args []string) {
-		serve()
-	},
-}
+	serveCmd := &cobra.Command{
+		Use:   "serve",
+		Short: "Start the wallet service gRPC server",
+		Run: func(cmd *cobra.Command, args []string) {
+			// Create explicit dependencies for the server
+			cfg, err := config.LoadConfig()
+			if err != nil {
+				log.Fatalf("Failed to load config: %v", err)
+			}
 
-func init() {
-	rootCmd.AddCommand(serveCmd)
+			if walletPort != "" {
+				cfg.WalletPort = walletPort
+			}
+
+			serve(cfg)
+		},
+	}
 
 	// Use flag with default from env
-	serveCmd.Flags().StringVarP(&port, "port", "p", os.Getenv("WALLET_PORT"), "Port to run the server on")
+	serveCmd.Flags().StringVarP(&walletPort, "port", "p", os.Getenv("WALLET_PORT"), "Port to run the server on")
+
+	return serveCmd
 }
 
-func serve() {
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
-	}
-
-	// Use command-line port if provided, otherwise use config
-	if port == "" {
-		port = cfg.WalletPort
-	}
-
+// serve starts the gRPC server with the provided configuration
+func serve(cfg *config.Config) {
 	// Set environment variables for other components to use
-	err = os.Setenv("DSN", cfg.DSN)
-	if err != nil {
+	if err := os.Setenv("DSN", cfg.DSN); err != nil {
 		log.Fatalf("Failed to set DSN: %v", err)
 	}
-	err = os.Setenv("JWT_KEY", cfg.JWTKey)
-	if err != nil {
-		log.Fatalf("Failed to set JWT_KEY")
+	if err := os.Setenv("JWT_KEY", cfg.JWTKey); err != nil {
+		log.Fatalf("Failed to set JWT_KEY: %v", err)
 	}
 
-	log.Printf("Starting server on :%s...", port)
+	log.Printf("Starting server on :%s...", cfg.WalletPort)
 
 	dbConn := database.ConnectToDB()
 	if dbConn == nil {
@@ -69,14 +68,16 @@ func serve() {
 	defer dbConn.Close()
 
 	trxConsumer := kafka.NewConsumer(dbConn, "deposit_initiated", "deposit_completed")
-	//runs in a goroutine
+	// Runs in a goroutine
 	go trxConsumer.Consume(context.Background())
 
+	// Create dependencies
 	walletRepo := repositories.NewPostgresWalletRepository(dbConn)
-	jwtUtil := jwt.NewJWTUtil(os.Getenv("JWT_KEY"))
+	jwtUtil := jwt.NewJWTUtil(cfg.JWTKey)
 	walletSvc := services.NewWalletService(walletRepo, jwtUtil)
 
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
+	// Set up gRPC server
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", cfg.WalletPort))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -84,7 +85,7 @@ func serve() {
 	s := grpc.NewServer()
 	pb.RegisterWalletServiceServer(s, walletSvc)
 
-	log.Printf("Wallet service running on :%s", port)
+	log.Printf("Wallet service running on :%s", cfg.WalletPort)
 	if err := s.Serve(lis); err != nil {
 		log.Fatal(err)
 	}

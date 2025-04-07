@@ -36,8 +36,8 @@ type ConsumerConfig struct {
 // DefaultConsumerConfig provides sensible defaults
 func DefaultConsumerConfig() ConsumerConfig {
 	return ConsumerConfig{
-		BatchSize:        50,              // Process up to 50 messages at once
-		MaxWorkers:       10,              // Up to 10 concurrent workers
+		BatchSize:        50,                     // Process up to 50 messages at once
+		MaxWorkers:       10,                     // Up to 10 concurrent workers
 		ProcessingPeriod: 500 * time.Millisecond, // Check for messages every 500ms
 	}
 }
@@ -52,8 +52,8 @@ func NewConsumerWithConfig(db *sql.DB, readerTopic string, writerTopic string, c
 			Brokers:        []string{"kafka:9092"},
 			Topic:          readerTopic,
 			GroupID:        "wallet-group",
-			MinBytes:       1e3,    // 1KB
-			MaxBytes:       10e6,   // 10MB
+			MinBytes:       1e3,  // 1KB
+			MaxBytes:       10e6, // 10MB
 			CommitInterval: 1 * time.Second,
 		}),
 		db: db,
@@ -73,10 +73,10 @@ func NewConsumerWithConfig(db *sql.DB, readerTopic string, writerTopic string, c
 
 func (c *Consumer) Consume(ctx context.Context) {
 	log.Printf("Starting Kafka consumer with max workers: %d, batch size: %d", c.maxWorkers, c.batchSize)
-	
+
 	// Channel for passing messages to workers
 	taskChan := make(chan kafka.Message, c.batchSize*2)
-	
+
 	// Start worker pool
 	var wg sync.WaitGroup
 	for i := 0; i < c.maxWorkers; i++ {
@@ -139,45 +139,45 @@ func (c *Consumer) fetchBatch(ctx context.Context, taskChan chan<- kafka.Message
 func (c *Consumer) startWorker(ctx context.Context, id int, taskChan <-chan kafka.Message, wg *sync.WaitGroup) {
 	defer wg.Done()
 	log.Printf("Starting worker %d", id)
-	
+
 	// Map to collect completion events for batch publishing
 	completionEvents := make(map[string]string)
-	
+
 	// Ticker for periodic batch commits
 	commitTicker := time.NewTicker(200 * time.Millisecond)
 	defer commitTicker.Stop()
-	
+
 	for {
 		select {
 		case <-ctx.Done():
 			// Commit any remaining events before exiting
 			c.publishCompletionEvents(ctx, completionEvents)
 			return
-			
+
 		case msg, ok := <-taskChan:
 			if !ok {
 				// Channel closed, exit worker
 				c.publishCompletionEvents(ctx, completionEvents)
 				return
 			}
-			
+
 			// Process the message
 			transactionID, ok := c.processMessage(ctx, msg)
 			if ok {
 				completionEvents[transactionID] = transactionID
-				
+
 				// Commit message to mark as processed
 				if err := c.reader.CommitMessages(ctx, msg); err != nil {
 					log.Printf("Worker %d: Failed to commit message: %v", id, err)
 				}
-				
+
 				// If we've accumulated enough events, publish them as a batch
 				if len(completionEvents) >= 10 {
 					c.publishCompletionEvents(ctx, completionEvents)
 					completionEvents = make(map[string]string)
 				}
 			}
-			
+
 		case <-commitTicker.C:
 			// Periodically publish any accumulated events
 			if len(completionEvents) > 0 {
@@ -191,19 +191,19 @@ func (c *Consumer) startWorker(ctx context.Context, id int, taskChan <-chan kafk
 // processMessage handles a single Kafka message
 func (c *Consumer) processMessage(ctx context.Context, msg kafka.Message) (string, bool) {
 	var event DepositEvent
-	
+
 	if err := json.Unmarshal(msg.Value, &event); err != nil {
 		log.Printf("Failed to unmarshal event: %v", err)
 		return "", false
 	}
-	
+
 	// Start a transaction
 	tx, err := c.db.BeginTx(ctx, nil)
 	if err != nil {
 		log.Println("Failed to begin transaction:", err)
 		return "", false
 	}
-	
+
 	// Update balance
 	_, err = tx.ExecContext(ctx,
 		"UPDATE wallets SET balance = balance + $1 WHERE id = $2",
@@ -213,13 +213,13 @@ func (c *Consumer) processMessage(ctx context.Context, msg kafka.Message) (strin
 		tx.Rollback()
 		return "", false
 	}
-	
+
 	// Commit transaction
 	if err := tx.Commit(); err != nil {
 		log.Printf("Failed to commit transaction: %v", err)
 		return "", false
 	}
-	
+
 	return event.TransactionID, true
 }
 
@@ -228,7 +228,7 @@ func (c *Consumer) publishCompletionEvents(ctx context.Context, events map[strin
 	if len(events) == 0 {
 		return
 	}
-	
+
 	messages := make([]kafka.Message, 0, len(events))
 	for txID := range events {
 		completionEvent := map[string]string{"transaction_id": txID}
@@ -238,7 +238,7 @@ func (c *Consumer) publishCompletionEvents(ctx context.Context, events map[strin
 			Value: msgBytes,
 		})
 	}
-	
+
 	// Write all messages in a batch
 	if err := c.writer.WriteMessages(ctx, messages...); err != nil {
 		log.Printf("Failed to publish completion events: %v", err)
