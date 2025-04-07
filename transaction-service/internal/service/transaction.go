@@ -5,18 +5,18 @@ import (
 	"log"
 	"transaction-service/internal/data"
 	"transaction-service/kafka"
-	pb "transaction-service/proto"
+	"transaction-service/proto/gen"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 type TransactionService interface {
-	Deposit(ctx context.Context, req *pb.TransactionRequest) (*pb.TransactionResponse, error)
+	Deposit(ctx context.Context, req *gen.TransactionRequest) (*gen.TransactionResponse, error)
 }
 
 type TransactionServiceImpl struct {
-	pb.UnimplementedTransactionServiceServer
+	gen.UnimplementedTransactionServiceServer
 	transactionRepo data.TransactionRepository
 	producer        *kafka.Producer
 }
@@ -28,7 +28,7 @@ func NewTransactionService(transactionRepo data.TransactionRepository, transacti
 	}
 }
 
-func (s *TransactionServiceImpl) Deposit(ctx context.Context, req *pb.TransactionRequest) (*pb.TransactionResponse, error) {
+func (s *TransactionServiceImpl) Deposit(ctx context.Context, req *gen.TransactionRequest) (*gen.TransactionResponse, error) {
 	deposit := data.TransactionRequest{
 		WalletID:       req.GetWalletId(),
 		Amount:         req.GetAmount(),
@@ -53,7 +53,7 @@ func (s *TransactionServiceImpl) Deposit(ctx context.Context, req *pb.Transactio
 	}
 	if existingID != "" {
 		tx.Commit()
-		return &pb.TransactionResponse{TransactionId: existingID}, nil
+		return &gen.TransactionResponse{TransactionId: existingID}, nil
 	}
 
 	// Insert PENDING transaction
@@ -75,5 +75,5 @@ func (s *TransactionServiceImpl) Deposit(ctx context.Context, req *pb.Transactio
 		return nil, err
 	}
 
-	return &pb.TransactionResponse{TransactionId: txID}, nil
+	return &gen.TransactionResponse{TransactionId: txID}, nil
 }

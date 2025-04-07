@@ -11,7 +11,7 @@ import (
 	"transaction-service/internal/data"
 	"transaction-service/internal/service"
 	"transaction-service/kafka"
-	pb "transaction-service/proto"
+	pb "transaction-service/proto/gen"
 
 	_ "github.com/jackc/pgconn"
 	_ "github.com/jackc/pgx/v4"
