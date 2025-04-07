@@ -1,14 +1,14 @@
 services:
 
   # Api-Gateway
-  api-gateway:
+  broker-service:
     build:
-      context: ./api-gateway
+      context: ./broker-service
       dockerfile: ./Dockerfile.dev
     ports:
       - "8080:8080"
     volumes:
-      - ./api-gateway:/app
+      - ./broker-service:/app
     environment:
       - AUTH_HOST=auth:50051
       - WALLET_HOST=wallet:50052
