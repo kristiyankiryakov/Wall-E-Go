@@ -49,7 +49,7 @@ func NewConsumer(db *sql.DB, readerTopic string, writerTopic string) *Consumer {
 func NewConsumerWithConfig(db *sql.DB, readerTopic string, writerTopic string, config ConsumerConfig) *Consumer {
 	return &Consumer{
 		reader: kafka.NewReader(kafka.ReaderConfig{
-			Brokers:        []string{"kafka:9092"},
+			Brokers:        []string{"localhost:9092"},
 			Topic:          readerTopic,
 			GroupID:        "wallet-group",
 			MinBytes:       1e3,  // 1KB
@@ -58,7 +58,7 @@ func NewConsumerWithConfig(db *sql.DB, readerTopic string, writerTopic string, c
 		}),
 		db: db,
 		writer: &kafka.Writer{
-			Addr:                   kafka.TCP("kafka:9092"),
+			Addr:                   kafka.TCP("localhost:9092"),
 			Topic:                  writerTopic,
 			Balancer:               &kafka.LeastBytes{},
 			BatchSize:              100,

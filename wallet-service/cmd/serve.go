@@ -68,7 +68,8 @@ func serve(cfg *config.Config) {
 	defer dbConn.Close()
 
 	trxConsumer := kafka.NewConsumer(dbConn, "deposit_initiated", "deposit_completed")
-	// Runs in a goroutine
+	defer trxConsumer.Close()
+
 	go trxConsumer.Consume(context.Background())
 
 	// Create dependencies
