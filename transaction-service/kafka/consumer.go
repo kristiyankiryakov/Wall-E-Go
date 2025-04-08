@@ -7,21 +7,24 @@ import (
 	"log"
 	"sync"
 	"time"
-	"transaction-service/internal/data"
+	"transaction-service/internal/domain/entities"
+	"transaction-service/internal/domain/repositories"
 
 	"github.com/segmentio/kafka-go"
 )
 
+const TRANSACTION_STATUS_COMPLETED entities.TransactionStatus = "COMPLETED"
+
 type Consumer struct {
 	reader          *kafka.Reader
 	db              *sql.DB
-	transactionRepo data.TransactionRepository
+	transactionRepo *repositories.PostgresTransactionRepository
 	batchSize       int
 	batchTimeout    time.Duration
 }
 
 func NewConsumer(db *sql.DB, topic string) *Consumer {
-	transactionRepo := data.NewPostgresTransactionRepository(db)
+	transactionRepo := repositories.NewPostgresTransactionRepository(db)
 	return &Consumer{
 		reader: kafka.NewReader(kafka.ReaderConfig{
 			Brokers:        []string{"localhost:9092"},
@@ -145,7 +148,7 @@ func (c *Consumer) processBatch(ctx context.Context, transactionIDs []string) {
 	start := time.Now()
 
 	// Use the concurrent update method from the repository
-	err := c.transactionRepo.UpdateStatusConcurrently(ctx, transactionIDs, data.StatusCompleted)
+	err := c.transactionRepo.UpdateStatusConcurrently(ctx, transactionIDs, TRANSACTION_STATUS_COMPLETED)
 	if err != nil {
 		log.Printf("Error updating transaction statuses: %v", err)
 	} else {
