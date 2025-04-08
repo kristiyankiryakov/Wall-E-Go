@@ -1,25 +1,25 @@
 services:
 
   # Api-Gateway
-  broker-service:
-    build:
-      context: ./broker-service
-      dockerfile: ./Dockerfile.dev
-    ports:
-      - "8080:8080"
-    volumes:
-      - ./broker-service:/app
-    environment:
-      - AUTH_HOST=auth:50051
-      - WALLET_HOST=wallet:50052
-      - TRANSACTION_HOST=transaction:50053
-      - JWT_KEY=MIGbMBAGByqGSM49AgEGBSuBBAAjA4GGAAQAwczAzq0G4TRw8Qj69FRxnuV380IQ #should be hidden in prod!!!
-    networks:
-      - myapp-network
-    depends_on:
-      - auth
-      - wallet
-      - transaction
+#  broker-service:
+#    build:
+#      context: ./broker-service
+#      dockerfile: ./Dockerfile.dev
+#    ports:
+#      - "8080:8080"
+#    volumes:
+#      - ./broker-service:/app
+#    environment:
+#      - AUTH_HOST=auth:50051
+#      - WALLET_HOST=wallet:50052
+#      - TRANSACTION_HOST=transaction:50053
+#      - JWT_KEY=MIGbMBAGByqGSM49AgEGBSuBBAAjA4GGAAQAwczAzq0G4TRw8Qj69FRxnuV380IQ #should be hidden in prod!!!
+#    networks:
+#      - myapp-network
+#    depends_on:
+#      - auth
+#      - wallet
+#      - transaction
 
   # Authentication Migrations
   auth-migrate:
@@ -89,26 +89,26 @@ services:
       - myapp-network
 
   # Wallet Service
-  wallet:
-    depends_on:
-      wallet-migrate:
-        condition: service_completed_successfully
-      wallet-db:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
-    build:
-      context: ./wallet-service
-      dockerfile: ./Dockerfile.dev
-    volumes:
-      - ./wallet-service:/app
-    ports:
-      - "50052:50052"
-    environment:
-      DSN: "host=wallet-db port=5432 user=user password=password dbname=wallet_db sslmode=disable timezone=UTC connect_timeout=5"
-      WALLET_PORT: "50052"
-    networks:
-      - myapp-network
+#  wallet:
+#    depends_on:
+#      wallet-migrate:
+#        condition: service_completed_successfully
+#      wallet-db:
+#        condition: service_healthy
+#      kafka:
+#        condition: service_healthy
+#    build:
+#      context: ./wallet-service
+#      dockerfile: ./Dockerfile.dev
+#    volumes:
+#      - ./wallet-service:/app
+#    ports:
+#      - "50052:50052"
+#    environment:
+#      DSN: "host=wallet-db port=5432 user=user password=password dbname=wallet_db sslmode=disable timezone=UTC connect_timeout=5"
+#      WALLET_PORT: "50052"
+#    networks:
+#      - myapp-network
 
   # Wallet Database
   wallet-db:
@@ -146,26 +146,26 @@ services:
       - myapp-network
 
   # Transaction Service
-  transaction:
-    depends_on:
-      transaction-migrate:
-        condition: service_completed_successfully
-      transaction-db:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
-    build:
-      context: ./transaction-service
-      dockerfile: ./Dockerfile.dev
-    volumes:
-      - ./transaction-service:/app
-    ports:
-      - "50053:50053"
-    environment:
-      DSN: "host=transaction-db port=5432 user=user password=password dbname=transaction_db sslmode=disable timezone=UTC connect_timeout=5"
-      TRANSACTION_PORT: "50053"
-    networks:
-      - myapp-network
+#  transaction:
+#    depends_on:
+#      transaction-migrate:
+#        condition: service_completed_successfully
+#      transaction-db:
+#        condition: service_healthy
+#      kafka:
+#        condition: service_healthy
+#    build:
+#      context: ./transaction-service
+#      dockerfile: ./Dockerfile.dev
+#    volumes:
+#      - ./transaction-service:/app
+#    ports:
+#      - "50053:50053"
+#    environment:
+#      DSN: "host=transaction-db port=5432 user=user password=password dbname=transaction_db sslmode=disable timezone=UTC connect_timeout=5"
+#      TRANSACTION_PORT: "50053"
+#    networks:
+#      - myapp-network
 
   # Transaction Database
   transaction-db:
@@ -222,8 +222,8 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1

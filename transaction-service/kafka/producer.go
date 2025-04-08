@@ -15,7 +15,7 @@ type Producer struct {
 
 func NewProducer(topic string) *Producer {
 	writer := &kafka.Writer{
-		Addr:                   kafka.TCP("kafka:9092"),
+		Addr:                   kafka.TCP("localhost:9092"),
 		Topic:                  topic,
 		Balancer:               &kafka.LeastBytes{},
 		AllowAutoTopicCreation: true,
