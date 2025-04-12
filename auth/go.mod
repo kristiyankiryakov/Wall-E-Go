@@ -1,4 +1,4 @@
-module wall-e-go
+module auth
 
 go 1.23.0
 
