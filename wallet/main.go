@@ -1,7 +1,7 @@
 package main
 
 import (
-	"wallet-service/cmd"
+	"wallet/internal/cmd"
 )
 
 func main() {

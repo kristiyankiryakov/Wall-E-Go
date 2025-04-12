@@ -1,8 +1,8 @@
 package clients
 
 import (
-	"broker-service/internal/models"
-	"broker-service/proto/gen"
+	"broker/internal/models"
+	"broker/proto/gen"
 	"context"
 	"log"
 

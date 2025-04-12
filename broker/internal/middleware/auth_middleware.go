@@ -1,9 +1,9 @@
 package middleware
 
 import (
-	"broker-service/internal/clients"
-	"broker-service/internal/config"
-	"broker-service/internal/models"
+	"broker/internal/clients"
+	"broker/internal/config"
+	"broker/internal/models"
 	"errors"
 	"fmt"
 	"log"

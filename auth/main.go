@@ -1,16 +1,16 @@
 package main
 
 import (
+	"auth/internal/data"
+	"auth/internal/jwt"
+	"auth/internal/service"
+	pb "auth/proto/gen"
 	"database/sql"
 	"fmt"
 	"log"
 	"net"
 	"os"
 	"time"
-	"wall-e-go/internal/data"
-	"wall-e-go/internal/jwt"
-	"wall-e-go/internal/service"
-	pb "wall-e-go/proto/gen"
 
 	_ "github.com/jackc/pgconn"
 	_ "github.com/jackc/pgx/v4"

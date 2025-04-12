@@ -1,11 +1,11 @@
 package service
 
 import (
+	"auth/internal/data"
+	"auth/internal/jwt"
+	"auth/proto/gen"
 	"context"
 	"log"
-	"wall-e-go/internal/data"
-	"wall-e-go/internal/jwt"
-	"wall-e-go/proto/gen"
 
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc/codes"
