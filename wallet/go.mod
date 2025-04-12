@@ -1,4 +1,4 @@
-module wallet-service
+module wallet
 
 go 1.23.5
 
