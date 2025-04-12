@@ -3,10 +3,10 @@ package services
 import (
 	"context"
 	"log"
-	"transaction-service/internal/domain/entities"
-	"transaction-service/internal/domain/repositories"
-	"transaction-service/kafka"
-	"transaction-service/proto/gen"
+	"transaction/internal/domain/entities"
+	"transaction/internal/domain/repositories"
+	"transaction/kafka"
+	"transaction/proto/gen"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

@@ -9,6 +9,7 @@
 *.so
 *.dylib
 wallet-service
+.idea
 
 # Test binary, built with `go test -c`
 *.test

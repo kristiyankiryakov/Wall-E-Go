@@ -7,8 +7,8 @@ import (
 	"log"
 	"sync"
 	"time"
-	"transaction-service/internal/domain/entities"
-	"transaction-service/internal/domain/repositories"
+	"transaction/internal/domain/entities"
+	"transaction/internal/domain/repositories"
 
 	"github.com/segmentio/kafka-go"
 )

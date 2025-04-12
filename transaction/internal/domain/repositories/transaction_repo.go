@@ -6,7 +6,7 @@ import (
 	"log"
 	"sync"
 	"time"
-	"transaction-service/internal/domain/entities"
+	"transaction/internal/domain/entities"
 )
 
 const DB_TIMEOUT = time.Second * 10
