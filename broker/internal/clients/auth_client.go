@@ -1,7 +1,7 @@
 package clients
 
 import (
-	"broker-service/proto/gen"
+	"broker/proto/gen"
 	"context"
 	"log"
 

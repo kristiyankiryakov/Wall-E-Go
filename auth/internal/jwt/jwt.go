@@ -1,9 +1,9 @@
 package jwt
 
 import (
+	"auth/internal/errors"
 	"log"
 	"time"
-	"wall-e-go/internal/errors"
 
 	"github.com/golang-jwt/jwt/v5"
 )

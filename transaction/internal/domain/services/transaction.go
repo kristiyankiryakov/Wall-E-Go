@@ -3,10 +3,10 @@ package services
 import (
 	"context"
 	"log"
-	"transaction-service/internal/domain/entities"
-	"transaction-service/internal/domain/repositories"
-	"transaction-service/kafka"
-	"transaction-service/proto/gen"
+	"transaction/internal/domain/entities"
+	"transaction/internal/domain/repositories"
+	"transaction/internal/producer"
+	"transaction/proto/gen"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -24,10 +24,10 @@ type TransactionService interface {
 type TransactionServiceImpl struct {
 	gen.UnimplementedTransactionServiceServer
 	transactionRepo *repositories.PostgresTransactionRepository
-	producer        *kafka.Producer
+	producer        *producer.Producer
 }
 
-func NewTransactionService(transactionRepo *repositories.PostgresTransactionRepository, transactionProducer *kafka.Producer) *TransactionServiceImpl {
+func NewTransactionService(transactionRepo *repositories.PostgresTransactionRepository, transactionProducer *producer.Producer) *TransactionServiceImpl {
 	return &TransactionServiceImpl{
 		transactionRepo: transactionRepo,
 		producer:        transactionProducer,

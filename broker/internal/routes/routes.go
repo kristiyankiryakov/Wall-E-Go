@@ -1,9 +1,9 @@
 package routes
 
 import (
-	"broker-service/internal/clients"
-	"broker-service/internal/handlers"
-	"broker-service/internal/middleware"
+	"broker/internal/clients"
+	"broker/internal/handlers"
+	"broker/internal/middleware"
 	"github.com/gin-gonic/gin"
 )
 

@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"broker-service/internal/clients"
-	"broker-service/internal/models"
-	"broker-service/internal/utils"
+	"broker/internal/clients"
+	"broker/internal/models"
+	"broker/internal/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"

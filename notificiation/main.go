@@ -1,8 +1,6 @@
 package main
 
-import (
-	"wallet/internal/cmd"
-)
+import "notification/internal/cmd"
 
 func main() {
 	cmd.Execute()

@@ -1,6 +1,6 @@
 package main
 
-import "broker-service/internal/cmd"
+import "broker/internal/cmd"
 
 func main() {
 	cmd.Execute()

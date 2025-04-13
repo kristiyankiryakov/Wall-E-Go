@@ -6,7 +6,7 @@ import (
 	"log"
 	"sync"
 	"time"
-	"transaction-service/internal/domain/entities"
+	"transaction/internal/domain/entities"
 )
 
 const DB_TIMEOUT = time.Second * 10
@@ -112,13 +112,11 @@ func (r *PostgresTransactionRepository) UpdateStatusConcurrently(ctx context.Con
 
 	// If only a few transactions, just use the batch method
 	if len(transactionIDs) < 5 {
-
 		return r.UpdateStatusBatch(
 			ctx,
 			transactionIDs,
 			status,
 		)
-
 	}
 
 	// For larger batches, process in parallel chunks

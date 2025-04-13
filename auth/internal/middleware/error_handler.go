@@ -1,9 +1,9 @@
 package middleware
 
 import (
+	"auth/internal/errors"
 	"log"
 	"net/http"
-	"wall-e-go/internal/errors"
 
 	"github.com/gin-gonic/gin"
 )

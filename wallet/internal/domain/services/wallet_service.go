@@ -4,11 +4,11 @@ import (
 	"context"
 	"log"
 	"strconv"
-	"wallet-service/internal/domain/entities"
-	"wallet-service/internal/domain/repositories"
-	"wallet-service/proto/gen"
+	"wallet/internal/domain/entities"
+	"wallet/internal/domain/repositories"
+	"wallet/proto/gen"
 
-	"wallet-service/internal/jwt"
+	"wallet/internal/jwt"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"

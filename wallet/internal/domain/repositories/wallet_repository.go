@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"log"
 	"time"
-	"wallet-service/internal/domain/entities"
+	"wallet/internal/domain/entities"
 )
 
 const DB_TIMEOUT = time.Second * 10

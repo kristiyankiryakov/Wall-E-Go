@@ -1,16 +1,16 @@
 package cmd
 
 import (
-	"broker-service/internal/clients"
-	"broker-service/internal/handlers"
-	"broker-service/internal/middleware"
-	"broker-service/internal/routes"
+	"broker/internal/clients"
+	"broker/internal/handlers"
+	"broker/internal/middleware"
+	"broker/internal/routes"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
 	"log"
 
-	"broker-service/internal/config"
+	"broker/internal/config"
 )
 
 // Server represents the API gateway server

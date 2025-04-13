@@ -1,6 +1,6 @@
 package main
 
-import "transaction-service/internal/cmd"
+import "transaction/internal/cmd"
 
 func main() {
 	cmd.Execute()

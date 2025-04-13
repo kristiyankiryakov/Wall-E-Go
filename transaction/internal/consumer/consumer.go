@@ -1,14 +1,13 @@
-package kafka
+package consumer
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"log"
 	"sync"
 	"time"
-	"transaction-service/internal/domain/entities"
-	"transaction-service/internal/domain/repositories"
+	"transaction/internal/domain/entities"
+	"transaction/internal/domain/repositories"
 
 	"github.com/segmentio/kafka-go"
 )
@@ -17,14 +16,12 @@ const TRANSACTION_STATUS_COMPLETED entities.TransactionStatus = "COMPLETED"
 
 type Consumer struct {
 	reader          *kafka.Reader
-	db              *sql.DB
 	transactionRepo *repositories.PostgresTransactionRepository
 	batchSize       int
 	batchTimeout    time.Duration
 }
 
-func NewConsumer(db *sql.DB, topic string) *Consumer {
-	transactionRepo := repositories.NewPostgresTransactionRepository(db)
+func NewConsumer(topic string, transactionRepo *repositories.PostgresTransactionRepository) *Consumer {
 	return &Consumer{
 		reader: kafka.NewReader(kafka.ReaderConfig{
 			Brokers:        []string{"localhost:9092"},
@@ -34,7 +31,6 @@ func NewConsumer(db *sql.DB, topic string) *Consumer {
 			MaxBytes:       10e6, // 10MB
 			CommitInterval: 1 * time.Second,
 		}),
-		db:              db,
 		transactionRepo: transactionRepo,
 		batchSize:       100,             // Process up to 100 messages in a batch
 		batchTimeout:    1 * time.Second, // Process batch every second or when full
