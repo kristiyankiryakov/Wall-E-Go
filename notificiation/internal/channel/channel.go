@@ -5,6 +5,6 @@ type Notification interface {
 	GetRecipient() string
 }
 
-type Channel interface {
-	SendMessage(n Notification) error
+type MessageSender interface {
+	Send(n Notification) error
 }
