@@ -3,6 +3,8 @@ package cmd
 import (
 	"context"
 	"github.com/spf13/cobra"
+	"notification/internal/channel/mail"
+	"notification/internal/config"
 	"notification/internal/consumer"
 	"notification/logger"
 )
@@ -15,12 +17,15 @@ func NewServeCmd() *cobra.Command {
 			log := logger.NewLogger()
 
 			log.Info("Starting consumer...")
-
-			trxCompletedConsumer := consumer.NewConsumer("deposit_completed", "notification")
+			mailSender := mail.NewMail(&config.MailConfig{
+				SMTPHost: "localhost",
+				SMTPPort: "1025",
+				Auth:     nil,
+			})
+			trxCompletedConsumer := consumer.NewConsumer("deposit_completed", "notification", mailSender)
 			defer trxCompletedConsumer.Close()
 
-			go trxCompletedConsumer.Consume(context.Background())
-
+			trxCompletedConsumer.Consume(context.Background())
 		},
 	}
 

@@ -7,11 +7,3 @@ type MailConfig struct {
 	SMTPPort string
 	Auth     smtp.Auth
 }
-
-func NewMailConfig(smtpHost, smtpPort string, auth smtp.Auth) *MailConfig {
-	return &MailConfig{
-		SMTPHost: smtpHost,
-		SMTPPort: smtpPort,
-		Auth:     auth,
-	}
-}

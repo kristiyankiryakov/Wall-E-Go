@@ -10,7 +10,7 @@ type Mail struct {
 	Config *config.MailConfig
 }
 
-func (m *Mail) SendMessage(n channel.Notification) error {
+func (m *Mail) Send(n channel.Notification) error {
 	e := email.NewEmail()
 	e.From = "Kris Tst <kris-test@example.com>"
 	e.To = []string{n.GetRecipient()}
