@@ -1,4 +1,4 @@
-package kafka
+package consumer
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"log"
 	"sync"
 	"time"
+	"wallet/internal/producer"
 
 	"github.com/segmentio/kafka-go"
 )
@@ -20,7 +21,6 @@ type DepositEvent struct {
 type Consumer struct {
 	reader           *kafka.Reader
 	db               *sql.DB
-	writer           *kafka.Writer
 	batchSize        int
 	maxWorkers       int
 	processingPeriod time.Duration
@@ -42,11 +42,11 @@ func DefaultConsumerConfig() ConsumerConfig {
 	}
 }
 
-func NewConsumer(db *sql.DB, readerTopic string, writerTopic string) *Consumer {
-	return NewConsumerWithConfig(db, readerTopic, writerTopic, DefaultConsumerConfig())
+func NewConsumer(db *sql.DB, readerTopic string) *Consumer {
+	return NewConsumerWithConfig(db, readerTopic, DefaultConsumerConfig())
 }
 
-func NewConsumerWithConfig(db *sql.DB, readerTopic string, writerTopic string, config ConsumerConfig) *Consumer {
+func NewConsumerWithConfig(db *sql.DB, readerTopic string, config ConsumerConfig) *Consumer {
 	return &Consumer{
 		reader: kafka.NewReader(kafka.ReaderConfig{
 			Brokers:        []string{"localhost:9092"},
@@ -56,22 +56,14 @@ func NewConsumerWithConfig(db *sql.DB, readerTopic string, writerTopic string, c
 			MaxBytes:       10e6, // 10MB
 			CommitInterval: 1 * time.Second,
 		}),
-		db: db,
-		writer: &kafka.Writer{
-			Addr:                   kafka.TCP("localhost:9092"),
-			Topic:                  writerTopic,
-			Balancer:               &kafka.LeastBytes{},
-			BatchSize:              100,
-			BatchTimeout:           20 * time.Millisecond,
-			AllowAutoTopicCreation: true,
-		},
+		db:               db,
 		batchSize:        config.BatchSize,
 		maxWorkers:       config.MaxWorkers,
 		processingPeriod: config.ProcessingPeriod,
 	}
 }
 
-func (c *Consumer) Consume(ctx context.Context) {
+func (c *Consumer) Consume(ctx context.Context, producer *producer.Producer) {
 	log.Printf("Starting Kafka consumer with max workers: %d, batch size: %d", c.maxWorkers, c.batchSize)
 
 	// Channel for passing messages to workers
@@ -81,7 +73,7 @@ func (c *Consumer) Consume(ctx context.Context) {
 	var wg sync.WaitGroup
 	for i := 0; i < c.maxWorkers; i++ {
 		wg.Add(1)
-		go c.startWorker(ctx, i, taskChan, &wg)
+		go c.startWorker(ctx, i, taskChan, &wg, producer)
 	}
 
 	// Periodically fetch batches of messages
@@ -136,7 +128,7 @@ func (c *Consumer) fetchBatch(ctx context.Context, taskChan chan<- kafka.Message
 }
 
 // startWorker processes messages from the task channel
-func (c *Consumer) startWorker(ctx context.Context, id int, taskChan <-chan kafka.Message, wg *sync.WaitGroup) {
+func (c *Consumer) startWorker(ctx context.Context, id int, taskChan <-chan kafka.Message, wg *sync.WaitGroup, producer *producer.Producer) {
 	defer wg.Done()
 	log.Printf("Starting worker %d", id)
 
@@ -151,13 +143,13 @@ func (c *Consumer) startWorker(ctx context.Context, id int, taskChan <-chan kafk
 		select {
 		case <-ctx.Done():
 			// Commit any remaining events before exiting
-			c.publishCompletionEvents(ctx, completionEvents)
+			producer.PublishCompletionEvents(ctx, completionEvents)
 			return
 
 		case msg, ok := <-taskChan:
 			if !ok {
 				// Channel closed, exit worker
-				c.publishCompletionEvents(ctx, completionEvents)
+				producer.PublishCompletionEvents(ctx, completionEvents)
 				return
 			}
 
@@ -173,7 +165,7 @@ func (c *Consumer) startWorker(ctx context.Context, id int, taskChan <-chan kafk
 
 				// If we've accumulated enough events, publish them as a batch
 				if len(completionEvents) >= 10 {
-					c.publishCompletionEvents(ctx, completionEvents)
+					producer.PublishCompletionEvents(ctx, completionEvents)
 					completionEvents = make(map[string]string)
 				}
 			}
@@ -181,7 +173,7 @@ func (c *Consumer) startWorker(ctx context.Context, id int, taskChan <-chan kafk
 		case <-commitTicker.C:
 			// Periodically publish any accumulated events
 			if len(completionEvents) > 0 {
-				c.publishCompletionEvents(ctx, completionEvents)
+				producer.PublishCompletionEvents(ctx, completionEvents)
 				completionEvents = make(map[string]string)
 			}
 		}
@@ -223,35 +215,8 @@ func (c *Consumer) processMessage(ctx context.Context, msg kafka.Message) (strin
 	return event.TransactionID, true
 }
 
-// publishCompletionEvents publishes a batch of completion events to Kafka
-func (c *Consumer) publishCompletionEvents(ctx context.Context, events map[string]string) {
-	if len(events) == 0 {
-		return
-	}
-
-	messages := make([]kafka.Message, 0, len(events))
-	for txID := range events {
-		completionEvent := map[string]string{"transaction_id": txID}
-		msgBytes, _ := json.Marshal(completionEvent)
-		messages = append(messages, kafka.Message{
-			Key:   []byte(txID),
-			Value: msgBytes,
-		})
-	}
-
-	// Write all messages in a batch
-	if err := c.writer.WriteMessages(ctx, messages...); err != nil {
-		log.Printf("Failed to publish completion events: %v", err)
-	} else {
-		log.Printf("Published %d completion events", len(messages))
-	}
-}
-
 func (c *Consumer) Close() {
 	if err := c.reader.Close(); err != nil {
 		log.Printf("Failed to close Kafka reader: %v", err)
-	}
-	if err := c.writer.Close(); err != nil {
-		log.Printf("Failed to close Kafka writer: %v", err)
 	}
 }

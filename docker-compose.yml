@@ -1,31 +1,10 @@
 services:
 
-  # Api-Gateway
-#  broker-service:
-#    build:
-#      context: ./broker-service
-#      dockerfile: ./Dockerfile.dev
-#    ports:
-#      - "8080:8080"
-#    volumes:
-#      - ./broker-service:/app
-#    environment:
-#      - AUTH_HOST=auth:50051
-#      - WALLET_HOST=wallet:50052
-#      - TRANSACTION_HOST=transaction:50053
-#      - JWT_KEY=MIGbMBAGByqGSM49AgEGBSuBBAAjA4GGAAQAwczAzq0G4TRw8Qj69FRxnuV380IQ #should be hidden in prod!!!
-#    networks:
-#      - myapp-network
-#    depends_on:
-#      - auth
-#      - wallet
-#      - transaction
-
   # Authentication Migrations
   auth-migrate:
     image: migrate/migrate
     volumes:
-      - ./auth-service/migrations:/migrations
+      - ./auth/migrations:/migrations
     command: ["-path", "/migrations", "-database", "postgres://user:password@auth-db:5432/auth_service?sslmode=disable", "up"]
     depends_on:
       auth-db:
@@ -41,12 +20,12 @@ services:
       auth-db:
         condition: service_healthy
     build:
-      context: ./auth-service
+      context: ./auth
       dockerfile: ./Dockerfile.dev
     ports:
       - "50051:50051"
     volumes:
-      - ./auth-service:/app
+      - ./auth:/app
     environment:
       JWT_KEY: MIGbMBAGByqGSM49AgEGBSuBBAAjA4GGAAQAwczAzq0G4TRw8Qj69FRxnuV380IQ #should be hidden in prod!!!
       DSN: "host=auth-db port=5432 user=user password=password dbname=auth_service sslmode=disable timezone=UTC connect_timeout=5"
@@ -67,7 +46,7 @@ services:
       POSTGRES_DB: auth_service
     volumes:
       - auth-db-data:/var/lib/postgresql/data/
-      - ./auth-service/migrations:/migrations
+      - ./auth/migrations:/migrations
     networks:
       - myapp-network
     healthcheck:
@@ -80,35 +59,13 @@ services:
   wallet-migrate:
     image: migrate/migrate
     volumes:
-      - ./wallet-service/migrations:/migrations
+      - ./wallet/migrations:/migrations
     command: ["-path", "/migrations", "-database", "postgres://user:password@wallet-db:5432/wallet_db?sslmode=disable", "up"]
     depends_on:
       wallet-db:
         condition: service_healthy
     networks:
       - myapp-network
-
-  # Wallet Service
-#  wallet:
-#    depends_on:
-#      wallet-migrate:
-#        condition: service_completed_successfully
-#      wallet-db:
-#        condition: service_healthy
-#      kafka:
-#        condition: service_healthy
-#    build:
-#      context: ./wallet-service
-#      dockerfile: ./Dockerfile.dev
-#    volumes:
-#      - ./wallet-service:/app
-#    ports:
-#      - "50052:50052"
-#    environment:
-#      DSN: "host=wallet-db port=5432 user=user password=password dbname=wallet_db sslmode=disable timezone=UTC connect_timeout=5"
-#      WALLET_PORT: "50052"
-#    networks:
-#      - myapp-network
 
   # Wallet Database
   wallet-db:
@@ -124,7 +81,7 @@ services:
       POSTGRES_DB: wallet_db
     volumes:
       - wallet-db-data:/var/lib/postgresql/data/
-      - ./wallet-service/migrations:/migrations
+      - ./wallet/migrations:/migrations
     networks:
       - myapp-network
     healthcheck:
@@ -137,35 +94,13 @@ services:
   transaction-migrate:
     image: migrate/migrate
     volumes:
-      - ./transaction-service/migrations:/migrations
+      - ./transaction/migrations:/migrations
     command: ["-path", "/migrations", "-database", "postgres://user:password@transaction-db:5432/transaction_db?sslmode=disable", "up"]
     depends_on:
       transaction-db:
         condition: service_healthy
     networks:
       - myapp-network
-
-  # Transaction Service
-#  transaction:
-#    depends_on:
-#      transaction-migrate:
-#        condition: service_completed_successfully
-#      transaction-db:
-#        condition: service_healthy
-#      kafka:
-#        condition: service_healthy
-#    build:
-#      context: ./transaction-service
-#      dockerfile: ./Dockerfile.dev
-#    volumes:
-#      - ./transaction-service:/app
-#    ports:
-#      - "50053:50053"
-#    environment:
-#      DSN: "host=transaction-db port=5432 user=user password=password dbname=transaction_db sslmode=disable timezone=UTC connect_timeout=5"
-#      TRANSACTION_PORT: "50053"
-#    networks:
-#      - myapp-network
 
   # Transaction Database
   transaction-db:
@@ -181,7 +116,7 @@ services:
       POSTGRES_DB: transaction_db
     volumes:
       - transaction-db-data:/var/lib/postgresql/data/
-      - ./transaction-service/migrations:/migrations
+      - ./transaction/migrations:/migrations
     networks:
       - myapp-network
     healthcheck:
@@ -235,6 +170,11 @@ services:
     networks:
       - myapp-network
 
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - "1025:1025" # SMTP port
+      - "8025:8025" # Web UI port
 volumes:
   auth-db-data:
   wallet-db-data:

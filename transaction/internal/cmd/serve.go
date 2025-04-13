@@ -9,10 +9,11 @@ import (
 	"log"
 	"net"
 	"transaction/internal/config"
+	"transaction/internal/consumer"
 	"transaction/internal/database"
 	"transaction/internal/domain/repositories"
 	"transaction/internal/domain/services"
-	"transaction/kafka"
+	"transaction/internal/producer"
 	pb "transaction/proto/gen"
 
 	_ "github.com/jackc/pgconn"
@@ -47,16 +48,16 @@ func NewServeCmd() *cobra.Command {
 					log.Println("Database connection closed successfully.")
 				}
 			}(dbConn)
+			tsxRepo := repositories.NewPostgresTransactionRepository(dbConn)
 
-			trxProducer := kafka.NewProducer(DEPOSIT_INITIATED)
+			trxProducer := producer.NewProducer(DEPOSIT_INITIATED)
 			defer trxProducer.Close()
 
-			trxConsumer := kafka.NewConsumer(dbConn, DEPOSIT_COMPLETED)
+			trxConsumer := consumer.NewConsumer(DEPOSIT_COMPLETED, tsxRepo)
 			defer trxConsumer.Close()
 
 			go trxConsumer.Consume(context.Background())
 
-			tsxRepo := repositories.NewPostgresTransactionRepository(dbConn)
 			tsxSvc := services.NewTransactionService(tsxRepo, trxProducer)
 
 			lis, err := net.Listen("tcp", fmt.Sprintf(":%s", cfg.GRPC_PORT))

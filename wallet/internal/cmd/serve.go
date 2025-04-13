@@ -7,11 +7,12 @@ import (
 	"net"
 	"os"
 	"wallet/internal/config"
+	"wallet/internal/consumer"
 	"wallet/internal/database"
 	"wallet/internal/domain/repositories"
 	"wallet/internal/domain/services"
 	"wallet/internal/jwt"
-	"wallet/kafka"
+	"wallet/internal/producer"
 	pb "wallet/proto/gen"
 
 	_ "github.com/jackc/pgconn"
@@ -67,10 +68,13 @@ func serve(cfg *config.Config) {
 	}
 	defer dbConn.Close()
 
-	trxConsumer := kafka.NewConsumer(dbConn, "deposit_initiated", "deposit_completed")
-	defer trxConsumer.Close()
+	depositCompletedProducer := producer.NewProducer("deposit_completed")
+	defer depositCompletedProducer.Close()
 
-	go trxConsumer.Consume(context.Background())
+	depositConsumer := consumer.NewConsumer(dbConn, "deposit_initiated")
+	defer depositConsumer.Close()
+
+	go depositConsumer.Consume(context.Background(), depositCompletedProducer)
 
 	// Create dependencies
 	walletRepo := repositories.NewPostgresWalletRepository(dbConn)
