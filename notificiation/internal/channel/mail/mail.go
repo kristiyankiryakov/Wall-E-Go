@@ -7,7 +7,7 @@ import (
 )
 
 type Mail struct {
-	Config *config.MailConfig
+	Config *config.Mail
 }
 
 func (m *Mail) Send(n channel.Notification) error {
@@ -20,7 +20,7 @@ func (m *Mail) Send(n channel.Notification) error {
 	return e.Send(m.Config.SMTPHost+":"+m.Config.SMTPPort, m.Config.Auth)
 }
 
-func NewMail(cfg *config.MailConfig) *Mail {
+func NewMail(cfg *config.Mail) *Mail {
 	return &Mail{
 		Config: cfg,
 	}

@@ -3,8 +3,9 @@ package consumer
 import (
 	"context"
 	"github.com/segmentio/kafka-go"
-	"notification/internal/channel"
 	"notification/internal/channel/mail"
+	"notification/internal/config"
+	"notification/internal/service"
 	"notification/logger"
 	"sync"
 	"time"
@@ -14,17 +15,17 @@ var log = logger.NewLogger()
 
 type Consumer struct {
 	reader       *kafka.Reader
-	sender       channel.MessageSender
+	sender       service.NotificationService
 	batchSize    int
 	batchTimeout time.Duration
 }
 
-func NewConsumer(topic, group string, sender channel.MessageSender) *Consumer {
+func NewConsumer(cfg *config.Kafka, sender service.NotificationService) *Consumer {
 	return &Consumer{
 		reader: kafka.NewReader(kafka.ReaderConfig{
-			Brokers:        []string{"localhost:9092"},
-			Topic:          topic,
-			GroupID:        group,
+			Brokers:        cfg.Brokers,
+			Topic:          cfg.Topic,
+			GroupID:        cfg.GroupID,
 			MinBytes:       1e3,  // 1KB
 			MaxBytes:       10e6, // 10MB
 			CommitInterval: 1 * time.Second,
@@ -41,10 +42,6 @@ func (c *Consumer) Consume(ctx context.Context) {
 
 	// Create a channel for messages to be processed
 	messageCh := make(chan kafka.Message, c.batchSize)
-	notification := mail.NewNotification(
-		"Test body",
-		"emineo@abv.bg",
-	)
 
 	// Start workers
 	for i := 0; i < numWorkers; i++ {
@@ -55,7 +52,12 @@ func (c *Consumer) Consume(ctx context.Context) {
 
 			for msg := range messageCh {
 				// Process message and send email notification
-				if err := c.sender.Send(notification); err != nil {
+				//TODO: fix hardcoded value
+				n := mail.NewNotification(
+					"Test body",
+					"emineo@abv.bg",
+				)
+				if err := c.sender.SendNotification(ctx, n); err != nil {
 					log.Printf("Failed to send notification for message: %v", err)
 				} else {
 					log.Printf("Successfully processed message: offset=%d", msg.Offset)
