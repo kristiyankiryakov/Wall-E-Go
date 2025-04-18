@@ -14,13 +14,11 @@ func NewRootCmd() *cobra.Command {
 		Long:  `A gRPC notification service`,
 	}
 
-	// Add commands
 	rootCmd.AddCommand(NewServeCmd())
 
 	return rootCmd
 }
 
-// Execute runs the root command
 func Execute() {
 	rootCmd := NewRootCmd()
 	if err := rootCmd.Execute(); err != nil {

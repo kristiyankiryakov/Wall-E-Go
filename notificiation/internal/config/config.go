@@ -8,9 +8,10 @@ type Mail struct {
 	Auth     smtp.Auth
 }
 type Kafka struct {
-	Brokers []string
-	Topic   string
-	GroupID string
+	Brokers    []string
+	Topic      string
+	GroupID    string
+	NumWorkers int
 }
 
 type Config struct {
@@ -26,9 +27,10 @@ func LoadConfig() *Config {
 			Auth:     nil,
 		},
 		&Kafka{
-			Brokers: []string{"localhost:9092"},
-			Topic:   "deposit_completed",
-			GroupID: "notification-group",
+			Brokers:    []string{"localhost:9092"},
+			Topic:      "deposit_completed",
+			GroupID:    "notification-group",
+			NumWorkers: 5,
 		},
 	}
 }

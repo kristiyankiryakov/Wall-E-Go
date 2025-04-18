@@ -18,6 +18,7 @@ type Consumer struct {
 	sender       service.NotificationService
 	batchSize    int
 	batchTimeout time.Duration
+	numWorkers   int
 }
 
 func NewConsumer(cfg *config.Kafka, sender service.NotificationService) *Consumer {
@@ -33,18 +34,18 @@ func NewConsumer(cfg *config.Kafka, sender service.NotificationService) *Consume
 		batchSize:    100,             // Process up to 100 messages in a batch
 		batchTimeout: 1 * time.Second, // Process batch every second or when full
 		sender:       sender,
+		numWorkers:   cfg.NumWorkers,
 	}
 }
 
 func (c *Consumer) Consume(ctx context.Context) {
 	wg := &sync.WaitGroup{}
-	const numWorkers = 5
 
 	// Create a channel for messages to be processed
 	messageCh := make(chan kafka.Message, c.batchSize)
 
 	// Start workers
-	for i := 0; i < numWorkers; i++ {
+	for i := 0; i < c.numWorkers; i++ {
 		wg.Add(1)
 		go func(workerID int) {
 			defer wg.Done()

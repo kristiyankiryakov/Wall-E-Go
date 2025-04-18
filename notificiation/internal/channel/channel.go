@@ -16,5 +16,5 @@ type Notification interface {
 }
 
 type MessageSender interface {
-	Send(n Notification) error // Update signature to match implementation
+	Send(n Notification) error
 }
