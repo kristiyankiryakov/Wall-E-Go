@@ -2,60 +2,73 @@ package consumer
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/segmentio/kafka-go"
-	"notification/internal/channel"
 	"notification/internal/channel/mail"
+
+	"notification/internal/config"
+	"notification/internal/service"
 	"notification/logger"
 	"sync"
 	"time"
 )
 
+type NotificationEvent struct {
+	Channel string
+	Data    map[string]any
+}
+
 var log = logger.NewLogger()
 
 type Consumer struct {
 	reader       *kafka.Reader
-	sender       channel.MessageSender
+	sender       service.NotificationService
 	batchSize    int
 	batchTimeout time.Duration
+	numWorkers   int
 }
 
-func NewConsumer(topic, group string, sender channel.MessageSender) *Consumer {
+func NewConsumer(cfg *config.Kafka, sender service.NotificationService) *Consumer {
 	return &Consumer{
 		reader: kafka.NewReader(kafka.ReaderConfig{
-			Brokers:        []string{"localhost:9092"},
-			Topic:          topic,
-			GroupID:        group,
-			MinBytes:       1e3,  // 1KB
-			MaxBytes:       10e6, // 10MB
-			CommitInterval: 1 * time.Second,
+			Brokers:        cfg.Brokers,
+			Topic:          cfg.Topic,
+			GroupID:        cfg.GroupID,
+			MinBytes:       cfg.MinBytes,
+			MaxBytes:       cfg.MaxBytes,
+			CommitInterval: cfg.CommitInterval,
 		}),
-		batchSize:    100,             // Process up to 100 messages in a batch
-		batchTimeout: 1 * time.Second, // Process batch every second or when full
+		batchSize:    cfg.BatchSize,
+		batchTimeout: cfg.BatchTimeout,
 		sender:       sender,
+		numWorkers:   cfg.NumWorkers,
 	}
 }
 
 func (c *Consumer) Consume(ctx context.Context) {
 	wg := &sync.WaitGroup{}
-	const numWorkers = 5
 
 	// Create a channel for messages to be processed
-	messageCh := make(chan kafka.Message, c.batchSize)
-	notification := mail.NewNotification(
-		"Test body",
-		"emineo@abv.bg",
-	)
+	notifications := make(chan kafka.Message, c.batchSize)
 
 	// Start workers
-	for i := 0; i < numWorkers; i++ {
+	for i := 0; i < c.numWorkers; i++ {
 		wg.Add(1)
 		go func(workerID int) {
 			defer wg.Done()
 			log.Printf("Worker %d started", workerID)
 
-			for msg := range messageCh {
-				// Process message and send email notification
-				if err := c.sender.Send(notification); err != nil {
+			for msg := range notifications {
+
+				// Unmarshal the message to NotificationEvent
+				var event NotificationEvent
+				if err := json.Unmarshal(msg.Value, &event); err != nil {
+					log.Printf("Failed to unmarshal message: %v", err)
+					continue
+				}
+
+				mailNotification := mail.NewNotification(event.Data)
+				if err := c.sender.SendNotification(ctx, mailNotification); err != nil {
 					log.Printf("Failed to send notification for message: %v", err)
 				} else {
 					log.Printf("Successfully processed message: offset=%d", msg.Offset)
@@ -73,7 +86,7 @@ func (c *Consumer) Consume(ctx context.Context) {
 
 	// Read messages from Kafka and send to workers
 	go func() {
-		defer close(messageCh)
+		defer close(notifications)
 
 		for {
 			select {
@@ -93,7 +106,7 @@ func (c *Consumer) Consume(ctx context.Context) {
 					continue
 				}
 
-				messageCh <- msg
+				notifications <- msg
 			}
 		}
 	}()

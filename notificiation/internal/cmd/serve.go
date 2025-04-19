@@ -6,26 +6,39 @@ import (
 	"notification/internal/channel/mail"
 	"notification/internal/config"
 	"notification/internal/consumer"
+	"notification/internal/service"
 	"notification/logger"
 )
 
 func NewServeCmd() *cobra.Command {
 	serveCmdInstance := &cobra.Command{
 		Use:   "serve",
-		Short: "Start the transaction service gRPC server",
+		Short: "Start the notification service",
 		Run: func(cmd *cobra.Command, args []string) {
 			log := logger.NewLogger()
+			ctx := context.Background()
 
+			cfg := config.LoadConfig()
+
+			// Initialize notification service
+			notificationSvc := service.NewNotificationService()
+
+			// Register mail channel
+			mailSender := mail.NewMail(cfg.Mail)
+			err := notificationSvc.AddChannel("email", mailSender)
+			if err != nil {
+				log.Fatalf("Failed to register mail channel: %v", err)
+			}
+
+			// Initialize consumer with dependency injection
 			log.Info("Starting consumer...")
-			mailSender := mail.NewMail(&config.MailConfig{
-				SMTPHost: "localhost",
-				SMTPPort: "1025",
-				Auth:     nil,
-			})
-			trxCompletedConsumer := consumer.NewConsumer("deposit_completed", "notification", mailSender)
-			defer trxCompletedConsumer.Close()
+			notificationConsumer := consumer.NewConsumer(
+				cfg.Kafka,
+				notificationSvc,
+			)
+			defer notificationConsumer.Close()
 
-			trxCompletedConsumer.Consume(context.Background())
+			notificationConsumer.Consume(ctx)
 		},
 	}
 

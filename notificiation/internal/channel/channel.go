@@ -1,8 +1,16 @@
 package channel
 
+type NotificationType string
+
+const (
+	Email NotificationType = "email"
+	SMS   NotificationType = "sms"
+	Push  NotificationType = "push"
+)
+
 type Notification interface {
-	GetBody() string
-	GetRecipient() string
+	GetType() NotificationType
+	GetMetadata() map[string]any
 }
 
 type MessageSender interface {
