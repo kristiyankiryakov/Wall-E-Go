@@ -1,6 +1,9 @@
 package config
 
-import "net/smtp"
+import (
+	"net/smtp"
+	"time"
+)
 
 type Mail struct {
 	SMTPHost string
@@ -8,10 +11,15 @@ type Mail struct {
 	Auth     smtp.Auth
 }
 type Kafka struct {
-	Brokers    []string
-	Topic      string
-	GroupID    string
-	NumWorkers int
+	Brokers        []string
+	Topic          string
+	GroupID        string
+	NumWorkers     int
+	MinBytes       int
+	MaxBytes       int
+	CommitInterval time.Duration
+	BatchSize      int
+	BatchTimeout   time.Duration
 }
 
 type Config struct {
@@ -27,10 +35,15 @@ func LoadConfig() *Config {
 			Auth:     nil,
 		},
 		&Kafka{
-			Brokers:    []string{"localhost:9092"},
-			Topic:      "deposit_completed",
-			GroupID:    "notification-group",
-			NumWorkers: 5,
+			Brokers:        []string{"localhost:9092"},
+			Topic:          "notification",
+			GroupID:        "notification-group",
+			NumWorkers:     5,
+			MinBytes:       10e3, // 10KB
+			MaxBytes:       10e6, // 10MB
+			CommitInterval: 1 * time.Second,
+			BatchSize:      100,
+			BatchTimeout:   1 * time.Second,
 		},
 	}
 }

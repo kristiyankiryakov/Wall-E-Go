@@ -6,13 +6,14 @@ import (
 	"log"
 	"net"
 	"os"
+	"time"
 	"wallet/internal/config"
-	"wallet/internal/consumer"
+	"wallet/internal/consumers"
 	"wallet/internal/database"
 	"wallet/internal/domain/repositories"
 	"wallet/internal/domain/services"
 	"wallet/internal/jwt"
-	"wallet/internal/producer"
+	"wallet/internal/producers"
 	pb "wallet/proto/gen"
 
 	_ "github.com/jackc/pgconn"
@@ -68,18 +69,35 @@ func serve(cfg *config.Config) {
 	}
 	defer dbConn.Close()
 
-	depositCompletedProducer := producer.NewProducer("deposit_completed")
-	defer depositCompletedProducer.Close()
-
-	depositConsumer := consumer.NewConsumer(dbConn, "deposit_initiated")
-	defer depositConsumer.Close()
-
-	go depositConsumer.Consume(context.Background(), depositCompletedProducer)
-
 	// Create dependencies
 	walletRepo := repositories.NewPostgresWalletRepository(dbConn)
 	jwtUtil := jwt.NewJWTUtil(cfg.JWTKey)
 	walletSvc := services.NewWalletService(walletRepo, jwtUtil)
+
+	// Initialize producers.
+	depositProducer := producers.NewDepositCompletedProducer("localhost:9092", "deposit_completed", 100, 20*time.Millisecond)
+	notifyProducer := producers.NewNotificationProducer("localhost:9092", "notification", 100, 20*time.Millisecond)
+
+	// Initialize consumer with config.
+	consumerCfg := &consumers.Config{
+		Brokers:        []string{"localhost:9092"},
+		Topic:          "deposit_initiated",
+		GroupID:        "wallet-group",
+		BatchSize:      100,
+		MinBytes:       10e3, // 10KB
+		MaxBytes:       10e6, // 10MB
+		CommitInterval: 1 * time.Second,
+	}
+
+	consumer := consumers.NewConsumer(dbConn, consumerCfg, depositProducer, notifyProducer)
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		consumer.Consume(ctx)
+	}()
+	defer cancel()
+	defer consumer.Close()
+	defer depositProducer.Close()
+	defer notifyProducer.Close()
 
 	// Set up gRPC server
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", cfg.WalletPort))

@@ -9,10 +9,8 @@ const (
 )
 
 type Notification interface {
-	GetBody() string
-	GetRecipient() string // Add this method
 	GetType() NotificationType
-	GetMetadata() map[string]string
+	GetMetadata() map[string]any
 }
 
 type MessageSender interface {
