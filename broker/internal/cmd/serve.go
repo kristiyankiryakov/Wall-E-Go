@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"log"
 
 	"broker/internal/config"
@@ -44,15 +45,14 @@ func NewServeCmd() *cobra.Command {
 			return nil
 		},
 	}
+	cmdInstance.Flags().String("config", "", "Path to the config file (eg. config.yaml)")
+	_ = viper.BindPFlag("config", cmdInstance.Flags().Lookup("config"))
 
 	return cmdInstance
 }
 
 // Start initializes and starts the API gateway
 func (s *Server) Start() error {
-	// Initialize config
-	cfg := config.NewConfig()
-
 	// Initialize clients
 	authClient, err := clients.NewAuthClient(s.config.AuthHost)
 	if err != nil {
@@ -75,7 +75,7 @@ func (s *Server) Start() error {
 	transactionHandler := handlers.NewTransactionHandler(transactionClient)
 
 	// Initialize middleware
-	authMiddleware := middleware.NewAuthMiddleware(cfg, walletClient)
+	authMiddleware := middleware.NewAuthMiddleware(s.config, walletClient)
 
 	// Set up routes
 	routes.SetupRouter(
