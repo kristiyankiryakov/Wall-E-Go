@@ -1,7 +1,7 @@
 ---
 description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 ---
 description: This rule emphasizes security, scalability, and maintainability best practices in Go API development.

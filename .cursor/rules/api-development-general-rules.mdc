@@ -1,7 +1,7 @@
 ---
 description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 ---
 description: General rules for Go API development using the net/http package, focusing on code quality, security, and best practices.

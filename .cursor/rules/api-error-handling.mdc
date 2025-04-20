@@ -1,7 +1,7 @@
 ---
 description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 ---
 description: This rule ensures proper error handling, status codes, and JSON response formatting in Go API development.
