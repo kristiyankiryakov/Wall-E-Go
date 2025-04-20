@@ -3,6 +3,7 @@ package consumer
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/segmentio/kafka-go"
 	"notification/internal/channel/mail"
 
@@ -46,6 +47,7 @@ func NewConsumer(cfg *config.Kafka, sender service.NotificationService) *Consume
 }
 
 func (c *Consumer) Consume(ctx context.Context) {
+	fmt.Println("Starting notification consumer...")
 	wg := &sync.WaitGroup{}
 
 	// Create a channel for messages to be processed
