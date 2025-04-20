@@ -1,5 +1,12 @@
 package config
 
+import (
+	"fmt"
+	"github.com/joho/godotenv"
+	"github.com/spf13/viper"
+	"log"
+)
+
 // Config holds application configuration
 type Config struct {
 	AuthHost        string
@@ -9,19 +16,35 @@ type Config struct {
 	JwtKey          string
 }
 
-// NewConfig creates a new configuration
 func NewConfig() *Config {
-	serverPort := "8080"
-	authHost := "localhost:50051"
-	walletHost := "localhost:50052"
-	transactionHost := "localhost:50053"
-	jwtKey := "MIGbMBAGByqGSM49AgEGBSuBBAAjA4GGAAQAwczAzq0G4TRw8Qj69FRxnuV380IQ"
+	// Load .env file (ignore if not found)
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, using default values or system environment variables")
+	}
+
+	// Set default values
+	viper.SetDefault("auth_host", "localhost:50051")
+	viper.SetDefault("wallet_host", "localhost:50052")
+	viper.SetDefault("transaction_host", "localhost:50053")
+	viper.SetDefault("server_port", "8080")
+	viper.SetDefault("jwt_key", "default-jwt-key")
+
+	viper.SetEnvPrefix("BROKER")
+	viper.AutomaticEnv() // maps BROKER_AUTH_HOST to auth_host, etc.
+
+	// Looks for a config file
+	viper.SetConfigName("config")
+	viper.AddConfigPath(".")
+	viper.AddConfigPath("/etc/broker/") // Production path
+	if err := viper.ReadInConfig(); err == nil {
+		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	}
 
 	return &Config{
-		authHost,
-		walletHost,
-		transactionHost,
-		serverPort,
-		jwtKey,
+		AuthHost:        viper.GetString("auth_host"),
+		WalletHost:      viper.GetString("wallet_host"),
+		TransactionHost: viper.GetString("transaction_host"),
+		ServerPort:      viper.GetString("server_port"),
+		JwtKey:          viper.GetString("jwt_key"),
 	}
 }
