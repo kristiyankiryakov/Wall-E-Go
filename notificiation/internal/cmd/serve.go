@@ -17,7 +17,6 @@ func NewServeCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			log := logger.NewLogger()
 			ctx := context.Background()
-
 			cfg := config.LoadConfig()
 
 			// Initialize notification service
