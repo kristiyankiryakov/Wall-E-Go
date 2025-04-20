@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"os"
 )
 
@@ -16,6 +17,9 @@ func NewRootCmd() *cobra.Command {
 
 	// Add commands
 	rootCmd.AddCommand(NewServeCmd())
+
+	rootCmd.Flags().String("config", "", "Path to the config file (eg. config.yaml)")
+	_ = viper.BindPFlag("config", rootCmd.Flags().Lookup("config"))
 
 	return rootCmd
 }
