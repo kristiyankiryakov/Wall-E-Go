@@ -89,7 +89,7 @@ func TestRegisterUser(t *testing.T) {
 		expectedError bool
 	}{
 		{
-			name:          "successful registration",
+			name:          "when user is registered successfully, it should return a token",
 			existingUsers: map[string]data.User{},
 			request: &gen.RegisterUserRequest{
 				Username: "newuser",
@@ -99,7 +99,7 @@ func TestRegisterUser(t *testing.T) {
 			expectedError: false,
 		},
 		{
-			name: "duplicate user",
+			name: "when user already exists, it should return an error",
 			existingUsers: map[string]data.User{
 				"existinguser": {
 					ID:       1,
@@ -153,7 +153,7 @@ func TestAuthenticate(t *testing.T) {
 		expectError   bool
 	}{
 		{
-			name: "successful authentication",
+			name: "when user is authenticated successfully, it should return a token",
 			existingUsers: map[string]data.User{
 				"testuser": {
 					ID:        1,
@@ -171,7 +171,7 @@ func TestAuthenticate(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name: "incorrect password",
+			name: "when password is incorrect, it should return an error",
 			existingUsers: map[string]data.User{
 				"testuser": {
 					ID:        1,
@@ -189,7 +189,7 @@ func TestAuthenticate(t *testing.T) {
 			expectError: true,
 		},
 		{
-			name:          "non-existent user",
+			name:          "when user does not exist, it should return an error",
 			existingUsers: map[string]data.User{},
 			request: &gen.AuthenticateRequest{
 				Username: "nonexistentuser",
