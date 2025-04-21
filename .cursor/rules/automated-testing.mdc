@@ -1,0 +1,28 @@
+Automated testing
+
+Automated testing is our preferred approach to doing testing in the scope of our projects.
+
+Testing approaches can be categorized in the following ways -  white box, black box or grey box testing. You can read more about the categories at https://www.guru99.com/back-box-vs-white-box-testing.html & https://www.guru99.com/grey-box-testing.html.
+
+There are various types of tests that we utilize such as unit, integration, e2e and load tests.  You can learn more about the differences between them at https://www.guru99.com/unit-test-vs-integration-test.html.
+
+We prioritize writing tests that give us the biggest Return-Of-Investment (ROI). This varies based on your goal at the time, but we’ll try to guide you through a few scenarios where a specific type of test has the best ROI.
+
+Properties of good tests
+
+Check this post https://medium.com/@kentbeck_7670/test-desiderata-94150638a4b3 of Kent Beck, it has a good list of desired test properties.
+
+Quoted from the Kent Beck post (there are video links in the post for every property cited here):
+
+- Isolated — tests should return the same results regardless of the order in which they are run.
+- Composable — if tests are isolated, then I can run 1 or 10 or 100 or 1,000,000 and get the same results.
+- Fast — tests should run quickly.
+- Inspiring — passing the tests should inspire confidence
+- Writable — tests should be cheap to write relative to the cost of the code being tested.
+- Readable — tests should be comprehensible for reader, invoking the motivation for writing this particular test.
+- Behavioral — tests should be sensitive to changes in the behavior of the code under test. If the behavior changes, the test result should change.
+- Structure-insensitive — tests should not change their result if the structure of the code changes.
+- Automated — tests should run without human intervention.
+- Specific — if a test fails, the cause of the failure should be obvious.
+- Deterministic — if nothing changes, the test result shouldn’t change.
+- Predictive — if the tests all pass, then the code under test should be suitable for production.

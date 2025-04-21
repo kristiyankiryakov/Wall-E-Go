@@ -1,0 +1,72 @@
+The load testing main purpose is to verify that the application can meet the SLO (Service Level Objectives).
+
+More specifically, it can be used for examing:
+
+- application MTTR (mean time to recovery)
+- resilience to load peaks
+- resilience to dependency outages
+- resilience to dependency misbehavior
+- resilience to client misbehavior
+- profiling
+
+An important prerequisite is that the application is **instrumented** property, as recommended in [Metrics](about:blank#Metrics) section. This instrumentation is responsible for the collection of the load test results.
+
+Load tests must be executed in isolation, they must not test the application’s dependencies. For that purpose, some of the dependency services must be replaced with **fake** ones.
+
+For example, since the `hsm-server-v2` depends on the HSM devices, in order to create a load test in isolation, we've created a [fake-device](https://github.com/sumup/hsm-server-v2/tree/main/testcmd/fake-device) that has some hard-coded predefined responses. The responses can be extracted with tools like tcpdump, wireshark, debug logs or a debugger.
+
+<aside>
+⚠️ Note that those fake services need **not** be a full simulation.
+
+</aside>
+
+Also, such fake services need to support simulating edge cases of interest, like:
+
+- slow response time
+- not responding at all
+- high error response rate
+- malformed or incorrect response
+
+<aside>
+⚠️ Note that those simulations are **not** for application correctness, but for validating that the application performance is not degraded.
+
+</aside>
+
+From the left side, one must have a tool that can stress the application under test. The tool you would use depends on the application API and network protocol.
+
+If there is no test client to use you must develop one yourself. For example, for the `hsm-server-v2` we’ve made a [test-client](https://github.com/sumup/hsm-server-v2/tree/main/testcmd/test-client) that supports the custom network protocol of the `hsm-server-v2` API.
+
+The test client must be configurable for:
+
+- total request count
+- test duration
+- request rate
+- request rate jitter
+- parallelism - number of workers
+- others based on the nature of the transport protocol in use - for example, specifying HTTP protocol version 1.1 or 2, enabling/disabling TLS, number of idle connections, etc.
+
+It is important to note, that the test-client and the fake services must be **instrumented**. The test-client instrumentation shows how the potential clients will perceive the load test exercises, while the fake services instrumentation will help you find out if there are any unexpected degradations in the communication between the application under test and the fake services.
+
+- For example, if you observe the following 99th percentile latencies:
+    - test client - 100ms
+    - application API layer - 80ms
+    - service-client inside the application - 60ms
+    - fake-service - 55ms
+
+    Then it is visible that 20ms are lost between the test client and the application. This can be caused by a network issue or inefficiency in the network code around the application API layer.
+
+    20ms more are lost between the application API layer and the service-client. Those 20ms are lost inside the application.
+
+    Finally, 5ms are lost between the service-client and the fake-service. This can be caused by a network issue or inefficiency in the service-client code.
+
+
+While running the load tests besides the instrumentation results, it must be possible to **profile** the application. Profiling helps spot a bottleneck that when optimized will give the best ROI (return on investment).
+
+See:
+
+- https://go.dev/doc/diagnostics
+- the `pprof` server in the hsm-server-v2 project https://github.com/sumup/hsm-server-v2/blob/main/internal/pprof/server.go
+- an example of how to collect profile data https://github.com/sumup/hsm-server-v2/blob/main/CONTRIBUTING.md#running-the-server-with-profiling)
+
+Never optimize code based on gut feeling, use benchmark or profiler.
+
