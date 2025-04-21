@@ -5,8 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/segmentio/kafka-go"
-	"notification/internal/channel/mail"
-
+	"notification/internal/channel"
 	"notification/internal/config"
 	"notification/internal/service"
 	"notification/logger"
@@ -69,7 +68,7 @@ func (c *Consumer) Consume(ctx context.Context) {
 					continue
 				}
 
-				mailNotification := mail.NewNotification(event.Data)
+				mailNotification := channel.NewNotification(event.Data)
 				if err := c.sender.SendNotification(ctx, mailNotification); err != nil {
 					log.Printf("Failed to send notification for message: %v", err)
 				} else {

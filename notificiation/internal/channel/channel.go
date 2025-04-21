@@ -13,6 +13,24 @@ type Notification interface {
 	GetMetadata() map[string]any
 }
 
+type notification struct {
+	metadata map[string]any
+}
+
+func NewNotification(metadata map[string]any) Notification {
+	return &notification{
+		metadata: metadata,
+	}
+}
+
+func (n *notification) GetType() NotificationType {
+	return Email
+}
+
+func (n *notification) GetMetadata() map[string]any {
+	return n.metadata
+}
+
 type MessageSender interface {
 	Send(n Notification) error
 }

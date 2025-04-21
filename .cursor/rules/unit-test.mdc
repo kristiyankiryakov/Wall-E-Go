@@ -1,0 +1,29 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+Unit tests
+
+*Unit tests* are the lowest level of testing, testing methods, and functions in isolation. The *Unit tests* are tightly coupled with the implementation. This means that changes in the implementation often lead to failing tests. Therefore they are best utilized when using [SOLID design](about:blank#) and [dependency injection](about:blank#) since it is easier to mock the test unit dependencies.
+
+**However,** to have the best ROI, prioritize writing a unit test when you can test in isolation pieces of logic without side effects. If you need to mock to simulate side effects, and test error handling, perhaps an *Integration test* might be a more efficient use of your time, or maybe you are confused by the notion of **Unit**.
+
+Nowadays in the industry, it is not really clear what is a *Unit*. Many think that a unit is a method, function, or class (struct in Golang). A unit is not a code under the test, but the test itself that is in isolation from the other tests, meaning that you can run the tests in any order or in parallel without producing different results.
+
+Anyway, whatever is the *Unit* there is a more important rule to follow:
+
+<aside>
+ℹ️ You must always test **behavior** not implementation.
+
+</aside>
+
+In practice, that means that you must test the public API of a module, and **refactoring** the implementation must not cause your tests to fail.
+
+Also you should use table-driven approach when writing tests in go.
+
+In regard to test doubles, most will immediately think about mocks. But there are more flavors of test doubles that often are more simple and more suitable for the job at hand. You can see a brief summary here https://martinfowler.com/bliki/TestDouble.html.
+
+It is tempting to use mocks exclusively since it is easy to automate the mock generation and in general, with a single mock you can support any use workflow of the dependency object being mocked. But mocks are somewhat problematic because with mocks the test expectation code is based on behavior rather than data and thus the test is **tightly** coupled with the code being tested (the implementation).
+
+We must follow all good programming practices even when writing tests. So we know that **tight** coupling is bad, therefore using mocks cannot qualify as quite good practice.
