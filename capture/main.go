@@ -1,6 +1,8 @@
 package main
 
-import "capture/cmd"
+import (
+	"capture/internal/cmd"
+)
 
 func main() {
 	cmd.Execute()
