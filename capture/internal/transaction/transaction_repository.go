@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/jmoiron/sqlx"
+	"fmt"
 	"time"
 )
 
@@ -27,7 +28,7 @@ func NewPostgresTransactionRepository(db *sqlx.DB) Repository {
 }
 
 // GetAuthorizedTransactionsForPeriod fetches transactions with locking
-func (r *PostgresTransactionRepository) GetAuthorizedTransactionsForPeriod(ctx context.Context, tx *sqlx.Tx, start, end string) ([]*Transaction, error) {
+func (r *PostgresTransactionRepository) GetAuthorizedTransactionsForPeriod(ctx context.Context, tx *sql.Tx, start, end string) ([]*Transaction, error) {
 	rows, err := tx.QueryContext(
 		ctx,
 		"SELECT id, amount, status, type FROM transactions WHERE status = $1 AND created_at BETWEEN $2 AND $3 FOR UPDATE",
@@ -64,7 +65,7 @@ func (r *PostgresTransactionRepository) UpdateTransactionsStatus(ctx context.Con
 		return nil
 	}
 
-	// Build a query with individual placeholders
+	// Build query with individual placeholders
 	query := "UPDATE transactions SET status = $1 WHERE id IN ("
 	args := make([]interface{}, 0, len(ids)+1)
 	args = append(args, status) // $1 is status
