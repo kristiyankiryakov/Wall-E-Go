@@ -1,31 +1,26 @@
 package db
 
 import (
-	"database/sql"
 	"fmt"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jmoiron/sqlx"
 	"os"
 	"time"
 )
 
-var DB *sql.DB
-
-func InitDB(dbUrl string) error {
-	var err error
-	DB, err = sql.Open("pgx", dbUrl)
+// NewDB creates a new sqlx.DB connection that can be injected into services
+func NewDB(dbUrl string) (*sqlx.DB, error) {
+	db, err := sqlx.Connect("pgx", dbUrl)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
-		return err
+		return nil, err
 	}
 
 	// Set connection pool parameters
-	DB.SetMaxOpenConns(10)
-	DB.SetMaxIdleConns(5)
-	DB.SetConnMaxLifetime(1 * time.Hour)
-	DB.SetConnMaxIdleTime(30 * time.Minute)
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(5)
+	db.SetConnMaxLifetime(1 * time.Hour)
+	db.SetConnMaxIdleTime(30 * time.Minute)
 
-	if err := DB.Ping(); err != nil {
-		return err
-	}
-	return nil
+	return db, nil
 }

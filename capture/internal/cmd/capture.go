@@ -31,12 +31,12 @@ func ExecuteCaptureAuthTransactions() {
 	ctx := context.Background()
 	cfg := config.NewConfig()
 
-	if err := db.InitDB(cfg.DatabaseUrl); err != nil {
+	postgresDbClient, err := db.NewDB(cfg.DatabaseUrl)
+	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
-	defer db.DB.Close()
 
-	repository := transaction.NewPostgresTransactionRepository(db.DB)
+	repository := transaction.NewPostgresTransactionRepository(postgresDbClient)
 
 	start := time.Now().Add(-2 * time.Hour).UTC().Format("2006-01-02 15:04:05")
 	log.Printf("Start time: %s", start)

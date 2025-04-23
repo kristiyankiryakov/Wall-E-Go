@@ -2,8 +2,8 @@ package transaction
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
+	"github.com/jmoiron/sqlx"
 	"time"
 )
 
@@ -11,21 +11,23 @@ const COMPLETED = "COMPLETED"
 const PROCESSING = "PROCESSING"
 
 type Repository interface {
-	GetAuthorizedTransactionsForPeriod(ctx context.Context, tx *sql.Tx, start, end string) ([]*Transaction, error)
-	UpdateTransactionsStatus(ctx context.Context, tx *sql.Tx, ids []string, status string) error
+	GetAuthorizedTransactionsForPeriod(ctx context.Context, tx *sqlx.Tx, start, end string) ([]*Transaction, error)
+	UpdateTransactionsStatus(ctx context.Context, tx *sqlx.Tx, ids []string, status string) error
 	GetTransactionsForProcessing(ctx context.Context, start, end string) ([]*Transaction, error)
 }
 
 type PostgresTransactionRepository struct {
-	db *sql.DB
+	db *sqlx.DB
 }
 
-func NewPostgresTransactionRepository(db *sql.DB) Repository {
-	return &PostgresTransactionRepository{db: db}
+func NewPostgresTransactionRepository(db *sqlx.DB) Repository {
+	return &PostgresTransactionRepository{
+		db: db,
+	}
 }
 
 // GetAuthorizedTransactionsForPeriod fetches transactions with locking
-func (r *PostgresTransactionRepository) GetAuthorizedTransactionsForPeriod(ctx context.Context, tx *sql.Tx, start, end string) ([]*Transaction, error) {
+func (r *PostgresTransactionRepository) GetAuthorizedTransactionsForPeriod(ctx context.Context, tx *sqlx.Tx, start, end string) ([]*Transaction, error) {
 	rows, err := tx.QueryContext(
 		ctx,
 		"SELECT id, amount, status, type FROM transactions WHERE status = $1 AND created_at BETWEEN $2 AND $3 FOR UPDATE",
@@ -57,12 +59,12 @@ func (r *PostgresTransactionRepository) GetAuthorizedTransactionsForPeriod(ctx c
 }
 
 // UpdateTransactionsStatus updates the status of specified transactions
-func (r *PostgresTransactionRepository) UpdateTransactionsStatus(ctx context.Context, tx *sql.Tx, ids []string, status string) error {
+func (r *PostgresTransactionRepository) UpdateTransactionsStatus(ctx context.Context, tx *sqlx.Tx, ids []string, status string) error {
 	if len(ids) == 0 {
 		return nil
 	}
 
-	// Build query with individual placeholders
+	// Build a query with individual placeholders
 	query := "UPDATE transactions SET status = $1 WHERE id IN ("
 	args := make([]interface{}, 0, len(ids)+1)
 	args = append(args, status) // $1 is status
@@ -85,7 +87,7 @@ func (r *PostgresTransactionRepository) GetTransactionsForProcessing(ctx context
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	tx, err := r.db.BeginTx(ctx, nil)
+	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
