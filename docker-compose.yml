@@ -175,6 +175,18 @@ services:
     ports:
       - "1025:1025" # SMTP port
       - "8025:8025" # Web UI port
+
+  tempo:
+    image: grafana/tempo:latest
+    ports:
+      - "4318:4318"
+    command: "--config.file=/etc/tempo.yaml"
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+
+
 volumes:
   auth-db-data:
   wallet-db-data:
