@@ -1,0 +1,24 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: auth-db-migrations
+spec:
+  template:
+    spec:
+      initContainers:
+        - name: wait-for-db
+          image: busybox
+          command: ['sh', '-c', 'until nc -z auth-db 5432; do echo waiting for db; sleep 2; done;']
+      containers:
+        - name: migrate
+          image: migrate/migrate:v4.15.2
+          command: ["migrate", "-path", "/migrations", "-database", "postgres://user:password@auth-db:5432/auth_service?sslmode=disable", "up"]
+          volumeMounts:
+            - name: migrations
+              mountPath: /migrations
+          imagePullPolicy: Never
+      volumes:
+        - name: migrations
+          configMap:
+            name: auth-migrations
+      restartPolicy: Never

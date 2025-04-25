@@ -35,6 +35,7 @@ func NewServeCmd() *cobra.Command {
 		Short: "Start the API gateway server",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			appConfig := config.NewConfig()
+			log.Printf("using config file: %s, %s", viper.ConfigFileUsed(), appConfig)
 			server := NewServer(appConfig)
 			err := server.Start()
 			if err != nil {
