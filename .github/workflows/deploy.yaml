@@ -20,8 +20,8 @@ jobs:
           k3d image import broker:latest -c mycluster
       - name: Deploy to k3d
         run: |
-          kubectl apply -f ./k8s/auth-secrets.yaml
-          kubectl apply -f ./k8s/auth-db.yaml
+          kubectl apply -f ./k8s/secrets/auth-secrets.yaml
+          kubectl apply -f ./k8s/databases/auth-db.yaml
           kubectl wait --for=condition=ready pod -l app=auth-db --timeout=60s
           kubectl delete configmap auth-migrations || true
           kubectl create configmap auth-migrations --from-file=./auth/migrations
@@ -29,6 +29,6 @@ jobs:
           kubectl apply -f ./k8s/migrations/auth-db-migrations.yaml
           kubectl wait --for=condition=complete job/auth-db-migrations --timeout=120s
           kubectl create configmap broker-config --from-file=./broker/config.yaml || true
-          kubectl apply -f ./k8s/auth-deployment.yaml
-          kubectl apply -f ./k8s/broker-deployment.yaml
+          kubectl apply -f ./k8s/deployments/auth-deployment.yaml
+          kubectl apply -f ./k8s/deployments/broker-deployment.yaml
           kubectl apply -f ./k8s/ingress.yaml
