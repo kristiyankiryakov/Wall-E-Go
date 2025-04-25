@@ -1,11 +1,11 @@
 ---
 description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 Unit tests
 
-*Unit tests* are the lowest level of testing, testing methods, and functions in isolation. The *Unit tests* are tightly coupled with the implementation. This means that changes in the implementation often lead to failing tests. Therefore they are best utilized when using [SOLID design](about:blank#) and [dependency injection](about:blank#) since it is easier to mock the test unit dependencies.
+*Unit tests* are the lowest level of testing, testing methods, and functions in isolation. The *Unit tests* are tightly coupled with the implementation. This means that changes in the implementation often lead to failing tests. Therefore they are best utilized when using [SOLID design](mdc:about:blank#) and [dependency injection](mdc:about:blank#) since it is easier to mock the test unit dependencies.
 
 **However,** to have the best ROI, prioritize writing a unit test when you can test in isolation pieces of logic without side effects. If you need to mock to simulate side effects, and test error handling, perhaps an *Integration test* might be a more efficient use of your time, or maybe you are confused by the notion of **Unit**.
 

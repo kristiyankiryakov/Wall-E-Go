@@ -1,4 +1,6 @@
-auth_host: "localhost:50051"
-wallet_host: "localhost:50052"
-transaction_host: "localhost:50053"
+# Deployment configuration for the broker service in Kubernetes
+auth_host: auth-svc:50051
+wallet_host: wallet-svc:50052 
+transaction_host: transaction-svc:50053
 server_port: "8080"
+jwt_key: default-jwt-keyn
