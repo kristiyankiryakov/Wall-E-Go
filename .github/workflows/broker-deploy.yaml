@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - 'broker/**'
+      - 'broker/.deployment/**'
+      - 'broker/config.yaml'
 jobs:
   deploy-broker:
     if: github.event.pull_request.merged == true
