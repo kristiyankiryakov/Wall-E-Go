@@ -32,6 +32,7 @@ services:
 #      AUTH_PORT: "50051"
 #    networks:
 #      - myapp-network
+#asd
 
   auth-db:
     image: 'postgres:14.2'
