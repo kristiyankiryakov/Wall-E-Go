@@ -1,0 +1,27 @@
+name: Deploy Broker Service to Local k3d Cluster
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+    paths:
+      - 'broker/**'
+jobs:
+  deploy-broker:
+    if: github.event.pull_request.merged == true
+    runs-on: [self-hosted, macOS, ARM64]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Wait for Auth Service
+        run: |
+          kubectl wait --for=condition=ready pod -l app=auth --timeout=60s
+      - name: Build and Import Broker Image
+        run: |
+          cd broker
+          docker build -t broker:latest .
+          k3d image import broker:latest -c mycluster
+      - name: Deploy Broker and Ingress
+        run: |
+          kubectl create configmap broker-config --from-file=broker/config.yaml || true
+          kubectl apply -f broker/.deployment/broker-deployment.yaml
+          kubectl apply -f broker/.deployment/ingress.yaml
