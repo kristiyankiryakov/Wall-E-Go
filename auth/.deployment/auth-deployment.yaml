@@ -28,7 +28,7 @@ spec:
               value: "default-jwt-key"
             - name: DSN
               value: "host=auth-db port=5432 user=user password=password dbname=auth_service sslmode=disable timezone=UTC connect_timeout=5"
-          imagePullPolicy: Never
+          imagePullPolicy: Always
 ---
 apiVersion: v1
 kind: Service

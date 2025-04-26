@@ -21,7 +21,7 @@ spec:
             - name: config
               mountPath: /etc/broker
               readOnly: true
-          imagePullPolicy: Never
+          imagePullPolicy: Always
       volumes:
         - name: config
           configMap:
