@@ -12,21 +12,9 @@ spec:
       labels:
         app: auth
     spec:
-      initContainers:
-        - name: wait-for-db
-          image: busybox
-          command: ['sh', '-c', 'until nc -z auth-db 5432; do echo waiting for db; sleep 2; done;']
       containers:
         - name: auth
-          image: auth:latest
+          image: kristiyankiryakov/auth:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 50051
-          env:
-            - name: AUTH_PORT
-              value: "50051"
-            - name: JWT_KEY
-              value: "default-jwt-key"
-            - name: DSN
-              value: "host=auth-db port=5432 user=user password=password dbname=auth_service sslmode=disable timezone=UTC connect_timeout=5"
-          imagePullPolicy: Always
-
