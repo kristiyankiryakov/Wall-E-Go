@@ -8,17 +8,25 @@ on:
       - 'auth/**'
       - 'auth/.deployment/**'
       - 'auth/migrations/**'
+  workflow_dispatch:
 jobs:
   deploy-auth:
     if: github.event.pull_request.merged == true
     runs-on: [self-hosted, macOS, ARM64]
     steps:
       - uses: actions/checkout@v3
-      - name: Build and Import Auth Image
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and Push Auth Image
         run: |
           cd auth
-          docker build -t auth:latest .
-          k3d image import auth:latest -c mycluster
+          docker build -t kristiyankiryakov/auth:${{ github.sha }} .
+          docker push kristiyankiryakov/auth:${{ github.sha }}
       - name: Deploy Auth and Dependencies
         run: |
           kubectl apply -f auth/.deployment/auth-secrets.yaml
@@ -27,6 +35,8 @@ jobs:
           kubectl delete configmap auth-migrations || true
           kubectl create configmap auth-migrations --from-file=auth/migrations
           kubectl delete job auth-db-migrations || true
+          kubectl set image -f auth/.deployment/auth-db-migrations.yaml migrate=kristiyankiryakov/auth:${{ github.sha }}
           kubectl apply -f auth/.deployment/auth-db-migrations.yaml
           kubectl wait --for=condition=complete job/auth-db-migrations --timeout=120s
+          kubectl set image -f auth/.deployment/auth-deployment.yaml auth=kristiyankiryakov/auth:${{ github.sha }}
           kubectl apply -f auth/.deployment/auth-deployment.yaml
