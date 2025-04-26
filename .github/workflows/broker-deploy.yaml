@@ -30,7 +30,8 @@ jobs:
       - name: Deploy Broker and Ingress
         run: |
           kubectl wait --for=condition=ready pod -l app=auth --timeout=60s
-          kubectl create configmap broker-config --from-file=broker/config.yaml || true
+          kubectl create configmap broker-config --from-file=broker/config.yaml --dry-run=client -o yaml | kubectl apply -f -
           kubectl set image -f broker/.deployment/broker-deployment.yaml broker=kristiyankiryakov/broker:${{ github.sha }}
           kubectl apply -f broker/.deployment/broker-deployment.yaml
+          kubectl apply -f broker/.deployment/broker-service.yaml
           kubectl apply -f broker/.deployment/ingress.yaml
