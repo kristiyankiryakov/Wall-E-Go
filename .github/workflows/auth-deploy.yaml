@@ -35,7 +35,6 @@ jobs:
           kubectl wait --for=condition=ready pod -l app=auth-db --timeout=60s
           kubectl create configmap auth-config --from-file=auth/config.yaml --dry-run=client -o yaml | kubectl apply -f -
           kubectl create configmap auth-migrations --from-file=auth/migrations --dry-run=client -o yaml | kubectl apply -f -
-#          kubectl delete job auth-db-migrations || true
           kubectl set image -f auth/.deployment/auth-db-migrations.yaml migrate=kristiyankiryakov/auth:${{ github.sha }}
           kubectl apply -f auth/.deployment/auth-db-migrations.yaml
           kubectl wait --for=condition=complete job/auth-db-migrations --timeout=120s
