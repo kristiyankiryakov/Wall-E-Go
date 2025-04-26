@@ -29,14 +29,4 @@ spec:
             - name: DSN
               value: "host=auth-db port=5432 user=user password=password dbname=auth_service sslmode=disable timezone=UTC connect_timeout=5"
           imagePullPolicy: Always
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: auth-svc
-spec:
-  selector:
-    app: auth
-  ports:
-    - port: 50051
-      targetPort: 50051
+
