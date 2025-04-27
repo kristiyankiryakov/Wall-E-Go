@@ -15,6 +15,6 @@ spec:
       containers:
         - name: broker
           image: kristiyankiryakov/broker:latest
-          imagePullPolicy: Always
+          imagePullPolicy: Never
           ports:
             - containerPort: 8080
