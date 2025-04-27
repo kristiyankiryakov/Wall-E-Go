@@ -14,9 +14,6 @@ jobs:
     runs-on: [self-hosted, macOS, ARM64]
     steps:
       - uses: actions/checkout@v3
-      - name: Wait for Auth Service
-        run: |
-          kubectl wait --for=condition=ready pod -l app=auth --timeout=60s
       - name: Build and Import Broker Image
         run: |
           cd broker
@@ -26,5 +23,5 @@ jobs:
         run: |
           kubectl create configmap broker-config --from-file=broker/config.yaml || true
           kubectl apply -f broker/.deployment/broker-deployment.yaml
-            kubectl apply -f broker/.deployment/broker-service.yaml
+          kubectl apply -f broker/.deployment/broker-service.yaml
           kubectl apply -f broker/.deployment/ingress.yaml
