@@ -11,6 +11,7 @@ import (
 	_ "github.com/jackc/pgconn"
 	_ "github.com/jackc/pgx/v4"
 	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"log"
@@ -24,6 +25,11 @@ func NewServeCmd() *cobra.Command {
 		Short: "Start the auth-service",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := context.Background()
+
+			// Load .env file
+			if err := godotenv.Load(); err != nil {
+				return fmt.Errorf("failed to load .env file: %w", err)
+			}
 
 			cfg, err := config.NewServerConfig()
 			if err != nil {

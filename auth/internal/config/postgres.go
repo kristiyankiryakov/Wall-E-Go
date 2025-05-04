@@ -4,10 +4,10 @@ import "time"
 
 type Postgres struct {
 	Host               string        `default:"localhost" envconfig:"POSTGRES_HOST"`
-	Port               int           `default:"5433" envconfig:"POSTGRES_PORT"`
+	Port               int           `default:"5432" envconfig:"POSTGRES_PORT"`
 	Username           string        `default:"user" envconfig:"POSTGRES_USERNAME"`
 	Password           string        `default:"password" envconfig:"POSTGRES_PASSWORD"`
-	Database           string        `default:"auth" envconfig:"POSTGRES_DATABASE"`
+	Database           string        `default:"postgres" envconfig:"POSTGRES_DATABASE"`
 	Schema             string        `default:"public" envconfig:"POSTGRES_SCHEMA"`
 	SSLMode            string        `default:"disable" envconfig:"POSTGRES_SSL_MODE"`
 	ConnectTimeout     string        `default:"5s" envconfig:"POSTGRES_CONNECT_TIMEOUT"`
