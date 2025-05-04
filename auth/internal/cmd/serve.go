@@ -14,7 +14,6 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
-	"log"
 	"net"
 )
 
@@ -36,10 +35,14 @@ func NewServeCmd() *cobra.Command {
 				return fmt.Errorf("failed to create runtime config: %w", err)
 			}
 
+			log := newLogger(cfg.Log)
+
 			pgPool, err := newPostgresPool(ctx, cfg.Postgres)
 			if err != nil {
 				return fmt.Errorf("failed to create postgres pool: %w", err)
 			}
+
+			log.Info("Successfully connected to postgres")
 
 			userRepo := data.NewPostgresUserRepository(pgPool)
 			jwtUtil := jwt.NewJWTUtil(cfg.JWTSecret)
@@ -57,7 +60,7 @@ func NewServeCmd() *cobra.Command {
 				return fmt.Errorf("failed to serve: %w", err)
 			}
 
-			fmt.Printf("Auth service running on %s\n", cfg.ListenPort)
+			log.Info("Server started on port", cfg.ListenPort)
 			return nil
 		},
 	}

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/sirupsen/logrus"
 )
 
 func newPostgresPool(ctx context.Context, cfg config.Postgres) (*pgxpool.Pool, error) {
@@ -36,7 +37,36 @@ func newPostgresPool(ctx context.Context, cfg config.Postgres) (*pgxpool.Pool, e
 		return nil, fmt.Errorf("failed to ping pgx pool: %w", err)
 	}
 
-	fmt.Println("Successfully connected to Postgres database")
-
 	return pool, nil
+}
+
+func newLogger(cfg config.Log) *logrus.Logger {
+	log := logrus.New()
+
+	log.WithFields(logrus.Fields{
+		"service": "auth",
+	})
+
+	log.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp: true,
+	})
+
+	switch cfg.Level {
+	case "DEBUG":
+		logrus.SetLevel(logrus.DebugLevel)
+	case "INFO":
+		logrus.SetLevel(logrus.InfoLevel)
+	case "WARN":
+		logrus.SetLevel(logrus.WarnLevel)
+	case "ERROR":
+		logrus.SetLevel(logrus.ErrorLevel)
+	case "FATAL":
+		logrus.SetLevel(logrus.FatalLevel)
+	case "PANIC":
+		logrus.SetLevel(logrus.PanicLevel)
+	default:
+		logrus.SetLevel(logrus.InfoLevel)
+	}
+
+	return log
 }

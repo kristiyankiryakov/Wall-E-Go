@@ -12,6 +12,7 @@ type ServerCfg struct {
 	JWTSecret string `default:"change-me-in-prod" envconfig:"JWT_SECRET"`
 
 	Postgres Postgres
+	Log      Log
 }
 
 func NewServerConfig() (*ServerCfg, error) {
