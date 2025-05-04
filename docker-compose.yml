@@ -5,36 +5,14 @@ services:
     image: migrate/migrate
     volumes:
       - ./auth/migrations:/migrations
-    command: ["-path", "/migrations", "-database", "postgres://user:password@auth-db:5432/auth_service?sslmode=disable", "up"]
+    command: ["-path", "/migrations", "-database", "postgres://user:password@auth-postgres:5432/auth?sslmode=disable", "up"]
     depends_on:
-      auth-db:
+      auth-postgres:
         condition: service_healthy
     networks:
       - myapp-network
 
-  # Authentication Service
-#  auth:
-#    depends_on:
-#      auth-migrate:
-#        condition: service_completed_successfully
-#      auth-db:
-#        condition: service_healthy
-#    build:
-#      context: ./auth
-#      dockerfile: ./Dockerfile.dev
-#    ports:
-#      - "50051:50051"
-#    volumes:
-#      - ./auth:/app
-#    environment:
-#      JWT_KEY: MIGbMBAGByqGSM49AgEGBSuBBAAjA4GGAAQAwczAzq0G4TRw8Qj69FRxnuV380IQ #should be hidden in prod!!!
-#      DSN: "host=auth-db port=5432 user=user password=password dbname=auth_service sslmode=disable timezone=UTC connect_timeout=5"
-#      AUTH_PORT: "50051"
-#    networks:
-#      - myapp-network
-#asd
-
-  auth-db:
+  auth-postgres:
     image: 'postgres:14.2'
     ports:
       - "5433:5432"
@@ -44,14 +22,14 @@ services:
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: auth_service
+      POSTGRES_DB: auth
     volumes:
       - auth-db-data:/var/lib/postgresql/data/
       - ./auth/migrations:/migrations
     networks:
       - myapp-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d auth_service"]
+      test: ["CMD-SHELL", "pg_isready -U user -d auth"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -61,15 +39,15 @@ services:
     image: migrate/migrate
     volumes:
       - ./wallet/migrations:/migrations
-    command: ["-path", "/migrations", "-database", "postgres://user:password@wallet-db:5432/wallet_db?sslmode=disable", "up"]
+    command: ["-path", "/migrations", "-database", "postgres://user:password@wallet-postgres:5432/wallet?sslmode=disable", "up"]
     depends_on:
-      wallet-db:
+      wallet-postgres:
         condition: service_healthy
     networks:
       - myapp-network
 
   # Wallet Database
-  wallet-db:
+  wallet-postgres:
     image: 'postgres:14.2'
     ports:
       - "5434:5432"
@@ -79,14 +57,14 @@ services:
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: wallet_db
+      POSTGRES_DB: wallet
     volumes:
       - wallet-db-data:/var/lib/postgresql/data/
       - ./wallet/migrations:/migrations
     networks:
       - myapp-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d wallet_db"]
+      test: ["CMD-SHELL", "pg_isready -U user -d wallet"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -177,15 +155,15 @@ services:
       - "1025:1025" # SMTP port
       - "8025:8025" # Web UI port
 
-  tempo:
-    image: grafana/tempo:latest
-    ports:
-      - "4318:4318"
-    command: "--config.file=/etc/tempo.yaml"
-  grafana:
-    image: grafana/grafana
-    ports:
-      - "3000:3000"
+#  tempo:
+#    image: grafana/tempo:latest
+#    ports:
+#      - "4318:4318"
+#    command: "--config.file=/etc/tempo.yaml"
+#  grafana:
+#    image: grafana/grafana
+#    ports:
+#      - "3000:3000"
 
 
 volumes:

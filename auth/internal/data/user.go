@@ -2,37 +2,35 @@ package data
 
 import (
 	"context"
-	"database/sql"
+	"errors"
+	"fmt"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"log"
 	"time"
 )
 
-const DB_TIMEOUT = time.Second * 3
-
 type UserRepository interface {
-	GetAll() ([]*User, error)
-	GetByUsername(username string) (*User, error)
-	GetOne(id int) (*User, error)
-	DeleteByID(id int) error
-	Insert(user User) (int, error)
+	GetAll(ctx context.Context) ([]*User, error)
+	GetByUsername(ctx context.Context, username string) (*User, error)
+	GetOne(ctx context.Context, id int) (*User, error)
+	DeleteByID(ctx context.Context, id int) error
+	Insert(ctx context.Context, user User) (int, error)
 }
 
 type PostgresUserRepository struct {
-	db *sql.DB
+	db *pgxpool.Pool
 }
 
-func NewPostgresUserRepository(db *sql.DB) *PostgresUserRepository {
+func NewPostgresUserRepository(db *pgxpool.Pool) *PostgresUserRepository {
 	return &PostgresUserRepository{db: db}
 }
 
 // GetAll returns a slice of all users
-func (r *PostgresUserRepository) GetAll() ([]*User, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), DB_TIMEOUT)
-	defer cancel()
-
+func (r *PostgresUserRepository) GetAll(ctx context.Context) ([]*User, error) {
 	query := `SELECT id, username, password, created_at, updated_at FROM users`
 
-	rows, err := r.db.QueryContext(ctx, query)
+	rows, err := r.db.Query(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -66,14 +64,11 @@ func (r *PostgresUserRepository) GetAll() ([]*User, error) {
 }
 
 // GetByUsername returns one user by username
-func (r *PostgresUserRepository) GetByUsername(username string) (*User, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), DB_TIMEOUT)
-	defer cancel()
-
+func (r *PostgresUserRepository) GetByUsername(ctx context.Context, username string) (*User, error) {
 	query := `select * from users where username = $1`
 
 	var user User
-	row := r.db.QueryRowContext(ctx, query, username)
+	row := r.db.QueryRow(ctx, query, username)
 
 	err := row.Scan(
 		&user.ID,
@@ -83,23 +78,19 @@ func (r *PostgresUserRepository) GetByUsername(username string) (*User, error) {
 		&user.UpdatedAt,
 	)
 
-	if err != nil && err != sql.ErrNoRows {
-		log.Println(err)
-		return nil, err
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return nil, fmt.Errorf("error getting user by username: %v", err)
 	}
 
 	return &user, nil
 }
 
 // GetOne returns one user by id
-func (r *PostgresUserRepository) GetOne(id int) (*User, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), DB_TIMEOUT)
-	defer cancel()
-
+func (r *PostgresUserRepository) GetOne(ctx context.Context, id int) (*User, error) {
 	query := `select * from users where id = $1`
 
 	var user User
-	row := r.db.QueryRowContext(ctx, query, id)
+	row := r.db.QueryRow(ctx, query, id)
 
 	err := row.Scan(
 		&user.ID,
@@ -109,46 +100,40 @@ func (r *PostgresUserRepository) GetOne(id int) (*User, error) {
 		&user.UpdatedAt,
 	)
 
-	if err != nil {
-		return nil, err
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return nil, fmt.Errorf("error getting user by id: %v", err)
 	}
 
 	return &user, nil
 }
 
 // DeleteByID deletes one user from the database, by ID
-func (r *PostgresUserRepository) DeleteByID(id int) error {
-	ctx, cancel := context.WithTimeout(context.Background(), DB_TIMEOUT)
-	defer cancel()
-
+func (r *PostgresUserRepository) DeleteByID(ctx context.Context, id int) error {
 	stmt := `DELETE FROM users WHERE id = $1`
 
-	_, err := r.db.ExecContext(ctx, stmt, id)
-	if err != nil {
-		return err
+	_, err := r.db.Exec(ctx, stmt, id)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return fmt.Errorf("error deleting user by id: %v", err)
 	}
 
 	return nil
 }
 
 // Insert inserts a new user into the database, and returns the ID of the newly inserted row
-func (r *PostgresUserRepository) Insert(user User) (int, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), DB_TIMEOUT)
-	defer cancel()
-
+func (r *PostgresUserRepository) Insert(ctx context.Context, user User) (int, error) {
 	var newID int
 	stmt := `insert into users (username, password, created_at, updated_at)
 		values ($1, $2, $3, $4) returning id`
 
-	err := r.db.QueryRowContext(ctx, stmt,
+	err := r.db.QueryRow(ctx, stmt,
 		user.Username,
 		user.Password,
 		time.Now(),
 		time.Now(),
 	).Scan(&newID)
 
-	if err != nil {
-		return 0, err
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return 0, fmt.Errorf("error inserting user: %v", err)
 	}
 
 	return newID, nil

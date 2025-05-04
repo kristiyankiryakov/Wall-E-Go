@@ -1,3 +1,0 @@
-auth_port: 50051
-jwt_key: default-jwt-key
-dsn : "host=auth-db port=5432 user=user password=password dbname=auth_service sslmode=disable timezone=UTC connect_timeout=5"

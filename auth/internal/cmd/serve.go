@@ -6,19 +6,15 @@ import (
 	"auth/internal/jwt"
 	"auth/internal/service"
 	pb "auth/proto/gen"
-	"database/sql"
+	"context"
 	"fmt"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	"google.golang.org/grpc"
-	"log"
-	"net"
-	"os"
-	"time"
-
 	_ "github.com/jackc/pgconn"
 	_ "github.com/jackc/pgx/v4"
 	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
+	"log"
+	"net"
 )
 
 // NewServeCmd creates the serve command
@@ -27,81 +23,38 @@ func NewServeCmd() *cobra.Command {
 		Use:   "serve",
 		Short: "Start the auth-service",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg := config.NewConfig()
-			if cfg == nil {
-				log.Fatal("Failed to load config")
+			ctx := context.Background()
+
+			cfg, err := config.NewServerConfig()
+			if err != nil {
+				return fmt.Errorf("failed to create runtime config: %w", err)
 			}
 
-			log.Printf("Starting server on :%s...", cfg.AuthPort)
-
-			dbConn := connectToDB()
-			if dbConn == nil {
-				log.Panic("Can't connect to Postgres!")
+			pgPool, err := newPostgresPool(ctx, cfg.Postgres)
+			if err != nil {
+				return fmt.Errorf("failed to create postgres pool: %w", err)
 			}
-			defer dbConn.Close()
 
-			userRepo := data.NewPostgresUserRepository(dbConn)
-			jwtUtil := jwt.NewJWTUtil(cfg.JwtKey)
+			userRepo := data.NewPostgresUserRepository(pgPool)
+			jwtUtil := jwt.NewJWTUtil(cfg.JWTSecret)
 			authSvc := service.NewAuthService(jwtUtil, userRepo)
 
-			lis, err := net.Listen("tcp", fmt.Sprintf(":%s", cfg.AuthPort))
+			lis, err := net.Listen("tcp", fmt.Sprintf(":%s", cfg.ListenPort))
 			if err != nil {
-				log.Fatal(err)
+				return fmt.Errorf("failed to listen: %w", err)
 			}
 
 			s := grpc.NewServer()
 			pb.RegisterAuthServiceServer(s, authSvc)
-			log.Printf("Auth service running on :%s", cfg.AuthPort)
+			log.Printf("Auth service running on :%s", cfg.ListenPort)
 			if err := s.Serve(lis); err != nil {
-				log.Fatal(err)
+				return fmt.Errorf("failed to serve: %w", err)
 			}
 
+			fmt.Printf("Auth service running on %s\n", cfg.ListenPort)
 			return nil
 		},
 	}
-	cmdInstance.Flags().String("config", "", "Path to the config file (eg. config.yaml)")
-	_ = viper.BindPFlag("config", cmdInstance.Flags().Lookup("config"))
 
 	return cmdInstance
-}
-
-func openDB(dsn string) (*sql.DB, error) {
-	db, err := sql.Open("pgx", dsn)
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	err = db.Ping()
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	return db, nil
-}
-
-func connectToDB() *sql.DB {
-	dsn := os.Getenv("DSN")
-	counts := 0
-
-	for {
-		connection, err := openDB(dsn)
-		if err != nil {
-			log.Println("Postgres not yet ready...")
-			counts++
-		} else {
-			log.Println("Connected to Postgres")
-			return connection
-		}
-
-		if counts > 10 {
-			log.Println(err)
-			return nil
-		}
-
-		log.Println("Backing off for two seconds...")
-		time.Sleep(2 * time.Second)
-		continue
-	}
 }
