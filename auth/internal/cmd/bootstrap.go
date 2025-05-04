@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sirupsen/logrus"
+	"gopkg.in/natefinch/lumberjack.v2"
+	"io"
+	"os"
 )
 
 func newPostgresPool(ctx context.Context, cfg config.Postgres) (*pgxpool.Pool, error) {
@@ -43,12 +46,25 @@ func newPostgresPool(ctx context.Context, cfg config.Postgres) (*pgxpool.Pool, e
 func newLogger(cfg config.Log) *logrus.Logger {
 	log := logrus.New()
 
-	log.WithFields(logrus.Fields{
-		"service": "auth",
-	})
+	// Always write to stdout if enabled:
+	writers := []io.Writer{}
+	if cfg.StdoutEnabled {
+		writers = append(writers, os.Stdout)
+	}
+	if cfg.FilePath != "" {
+		writers = append(writers, &lumberjack.Logger{
+			Filename:   cfg.FilePath,
+			MaxSize:    100,
+			MaxBackups: 3,
+			MaxAge:     28,
+		})
+	}
+	log.SetOutput(io.MultiWriter(writers...))
 
 	log.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: true,
+		DisableColors: false,
+		FieldMap:      logrus.FieldMap{"service": "auth"},
 	})
 
 	switch cfg.Level {

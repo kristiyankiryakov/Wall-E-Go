@@ -155,15 +155,33 @@ services:
       - "1025:1025" # SMTP port
       - "8025:8025" # Web UI port
 
-#  tempo:
-#    image: grafana/tempo:latest
-#    ports:
-#      - "4318:4318"
-#    command: "--config.file=/etc/tempo.yaml"
-#  grafana:
-#    image: grafana/grafana
-#    ports:
-#      - "3000:3000"
+  loki:
+    image: grafana/loki:2.9.1
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki-config.yaml:/etc/loki/local-config.yaml
+      - ./loki-data:/loki
+
+  promtail:
+    image: grafana/promtail:2.9.1
+    command: -config.file=/etc/promtail/config.yaml
+    ports:
+      - "9080:9080"
+    volumes:
+      - ./promtail-config.yaml:/etc/promtail/config.yaml:ro
+      - ./logs:/logs:ro
+
+  grafana:
+    image: grafana/grafana:11.6.0
+    depends_on:
+      - loki
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
 
 
 volumes:
@@ -173,6 +191,7 @@ volumes:
   zookeeper-data:
   zookeeper-logs:
   kafka-data:
+  grafana-data:
 
 networks:
   myapp-network:

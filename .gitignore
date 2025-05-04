@@ -32,3 +32,4 @@ go.work.sum
 *tmp
 # env file
 .env
+logs
