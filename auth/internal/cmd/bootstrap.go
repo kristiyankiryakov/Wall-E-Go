@@ -32,5 +32,11 @@ func newPostgresPool(ctx context.Context, cfg config.Postgres) (*pgxpool.Pool, e
 		return nil, fmt.Errorf("failed to create pgx pool: %w", err)
 	}
 
+	if err := pool.Ping(ctx); err != nil {
+		return nil, fmt.Errorf("failed to ping pgx pool: %w", err)
+	}
+
+	fmt.Println("Successfully connected to Postgres database")
+
 	return pool, nil
 }
