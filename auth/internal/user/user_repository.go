@@ -1,4 +1,4 @@
-package data
+package user
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"log"
+	"github.com/sirupsen/logrus"
 	"time"
 )
 
@@ -19,11 +19,15 @@ type UserRepository interface {
 }
 
 type PostgresUserRepository struct {
-	db *pgxpool.Pool
+	db  *pgxpool.Pool
+	log *logrus.Logger
 }
 
-func NewPostgresUserRepository(db *pgxpool.Pool) *PostgresUserRepository {
-	return &PostgresUserRepository{db: db}
+func NewPostgresUserRepository(conn *pgxpool.Pool, logger *logrus.Logger) *PostgresUserRepository {
+	return &PostgresUserRepository{
+		db:  conn,
+		log: logger,
+	}
 }
 
 // GetAll returns a slice of all users
@@ -31,7 +35,8 @@ func (r *PostgresUserRepository) GetAll(ctx context.Context) ([]*User, error) {
 	query := `SELECT id, username, password, created_at, updated_at FROM users`
 
 	rows, err := r.db.Query(ctx, query)
-	if err != nil {
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		r.log.WithError(err).Error("error querying users")
 		return nil, err
 	}
 	defer rows.Close()
@@ -48,16 +53,16 @@ func (r *PostgresUserRepository) GetAll(ctx context.Context) ([]*User, error) {
 			&user.UpdatedAt,
 		)
 		if err != nil {
-			log.Println("Error scanning user:", err)
-			return nil, err
+			r.log.WithError(err).Error("error scanning row")
+			return nil, fmt.Errorf("error scanning row: %v", err)
 		}
 		users = append(users, &user)
 	}
 
 	// Check for errors from iterating over rows
 	if err := rows.Err(); err != nil {
-		log.Println("Error iterating rows:", err)
-		return nil, err
+		logrus.WithError(err).Error("error iterating over rows")
+		return nil, fmt.Errorf("error iterating over rows: %v", err)
 	}
 
 	return users, nil

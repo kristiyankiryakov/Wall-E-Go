@@ -1,7 +1,6 @@
-package service
+package user
 
 import (
-	"auth/internal/data"
 	"auth/proto/gen"
 	"context"
 	"errors"
@@ -13,24 +12,24 @@ import (
 
 // InMemoryUserRepository is a real implementation using in-memory storage
 type InMemoryUserRepository struct {
-	users map[string]data.User
+	users map[string]User
 }
 
 func NewInMemoryUserRepository() *InMemoryUserRepository {
 	return &InMemoryUserRepository{
-		users: make(map[string]data.User),
+		users: make(map[string]User),
 	}
 }
 
-func (r *InMemoryUserRepository) GetByUsername(username string) (*data.User, error) {
+func (r *InMemoryUserRepository) GetByUsername(username string) (*User, error) {
 	user, exists := r.users[username]
 	if !exists {
-		return &data.User{}, nil
+		return &User{}, nil
 	}
 	return &user, nil
 }
 
-func (r *InMemoryUserRepository) Insert(user data.User) (int, error) {
+func (r *InMemoryUserRepository) Insert(user User) (int, error) {
 	if _, exists := r.users[user.Username]; exists {
 		return 0, errors.New("user already exists")
 	}
@@ -43,8 +42,8 @@ func (r *InMemoryUserRepository) Insert(user data.User) (int, error) {
 	return user.ID, nil
 }
 
-func (r *InMemoryUserRepository) GetAll() ([]*data.User, error) {
-	var users []*data.User
+func (r *InMemoryUserRepository) GetAll() ([]*User, error) {
+	var users []*User
 	for _, user := range r.users {
 		userCopy := user
 		users = append(users, &userCopy)
@@ -52,7 +51,7 @@ func (r *InMemoryUserRepository) GetAll() ([]*data.User, error) {
 	return users, nil
 }
 
-func (r *InMemoryUserRepository) GetOne(id int) (*data.User, error) {
+func (r *InMemoryUserRepository) GetOne(id int) (*User, error) {
 	for _, user := range r.users {
 		if user.ID == id {
 			return &user, nil
@@ -83,14 +82,14 @@ func TestRegisterUser(t *testing.T) {
 
 	testCases := []struct {
 		name          string
-		existingUsers map[string]data.User
+		existingUsers map[string]User
 		request       *gen.RegisterUserRequest
 		expected      string
 		expectedError bool
 	}{
 		{
 			name:          "when user is registered successfully, it should return a token",
-			existingUsers: map[string]data.User{},
+			existingUsers: map[string]User{},
 			request: &gen.RegisterUserRequest{
 				Username: "newuser",
 				Password: "password123",
@@ -100,7 +99,7 @@ func TestRegisterUser(t *testing.T) {
 		},
 		{
 			name: "when user already exists, it should return an error",
-			existingUsers: map[string]data.User{
+			existingUsers: map[string]User{
 				"existinguser": {
 					ID:       1,
 					Username: "existinguser",
@@ -147,14 +146,14 @@ func TestAuthenticate(t *testing.T) {
 
 	testCases := []struct {
 		name          string
-		existingUsers map[string]data.User
+		existingUsers map[string]User
 		request       *gen.AuthenticateRequest
 		expected      string
 		expectError   bool
 	}{
 		{
 			name: "when user is authenticated successfully, it should return a token",
-			existingUsers: map[string]data.User{
+			existingUsers: map[string]User{
 				"testuser": {
 					ID:        1,
 					Username:  "testuser",
@@ -172,7 +171,7 @@ func TestAuthenticate(t *testing.T) {
 		},
 		{
 			name: "when password is incorrect, it should return an error",
-			existingUsers: map[string]data.User{
+			existingUsers: map[string]User{
 				"testuser": {
 					ID:        1,
 					Username:  "testuser",
@@ -190,7 +189,7 @@ func TestAuthenticate(t *testing.T) {
 		},
 		{
 			name:          "when user does not exist, it should return an error",
-			existingUsers: map[string]data.User{},
+			existingUsers: map[string]User{},
 			request: &gen.AuthenticateRequest{
 				Username: "nonexistentuser",
 				Password: "anypassword",

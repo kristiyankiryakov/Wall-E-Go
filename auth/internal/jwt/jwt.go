@@ -17,7 +17,9 @@ type JWTUtilImpl struct {
 }
 
 func NewJWTUtil(secretKey string) *JWTUtilImpl {
-	return &JWTUtilImpl{secretKey: secretKey}
+	return &JWTUtilImpl{
+		secretKey: secretKey,
+	}
 }
 
 func (j *JWTUtilImpl) GenerateToken(user_id int) (string, error) {

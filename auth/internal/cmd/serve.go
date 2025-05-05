@@ -2,15 +2,12 @@ package cmd
 
 import (
 	"auth/internal/config"
-	"auth/internal/data"
 	"auth/internal/jwt"
-	"auth/internal/service"
+	"auth/internal/user"
 	pb "auth/proto/gen"
 	"context"
 	"fmt"
-	_ "github.com/jackc/pgconn"
-	_ "github.com/jackc/pgx/v4"
-	_ "github.com/jackc/pgx/v4/stdlib"
+
 	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
@@ -44,9 +41,9 @@ func NewServeCmd() *cobra.Command {
 
 			log.Info("Successfully connected to postgres")
 
-			userRepo := data.NewPostgresUserRepository(pgPool)
+			userRepo := user.NewPostgresUserRepository(pgPool, log)
 			jwtUtil := jwt.NewJWTUtil(cfg.JWTSecret)
-			authSvc := service.NewAuthService(jwtUtil, userRepo)
+			authSvc := user.NewAuthService(jwtUtil, userRepo, log)
 
 			lis, err := net.Listen("tcp", fmt.Sprintf(":%s", cfg.ListenPort))
 			if err != nil {
@@ -55,7 +52,6 @@ func NewServeCmd() *cobra.Command {
 
 			s := grpc.NewServer()
 			pb.RegisterAuthServiceServer(s, authSvc)
-			log.Printf("Auth service running on :%s", cfg.ListenPort)
 			if err := s.Serve(lis); err != nil {
 				return fmt.Errorf("failed to serve: %w", err)
 			}

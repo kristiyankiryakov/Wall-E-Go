@@ -63,8 +63,6 @@ func newLogger(cfg config.Log) *logrus.Logger {
 
 	log.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: true,
-		DisableColors: false,
-		FieldMap:      logrus.FieldMap{"service": "auth"},
 	})
 
 	switch cfg.Level {
@@ -84,5 +82,5 @@ func newLogger(cfg config.Log) *logrus.Logger {
 		logrus.SetLevel(logrus.InfoLevel)
 	}
 
-	return log
+	return log.WithField("service", "auth").Logger
 }
