@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"auth/internal/auth"
 	"auth/internal/config"
 	"auth/internal/jwt"
 	"auth/internal/user"
@@ -43,20 +44,20 @@ func NewServeCmd() *cobra.Command {
 
 			userRepo := user.NewPostgresUserRepository(pgPool, log)
 			jwtUtil := jwt.NewJWTUtil(cfg.JWTSecret)
-			authSvc := user.NewAuthService(jwtUtil, userRepo, log)
+			authSvc := auth.NewAuthService(jwtUtil, userRepo, log)
 
 			lis, err := net.Listen("tcp", fmt.Sprintf(":%s", cfg.ListenPort))
 			if err != nil {
 				return fmt.Errorf("failed to listen: %w", err)
 			}
 
+			log.Infof("gRPC server listening on port %s", cfg.ListenPort)
 			s := grpc.NewServer()
 			pb.RegisterAuthServiceServer(s, authSvc)
 			if err := s.Serve(lis); err != nil {
 				return fmt.Errorf("failed to serve: %w", err)
 			}
 
-			log.Info("Server started on port", cfg.ListenPort)
 			return nil
 		},
 	}

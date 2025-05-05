@@ -1,7 +1,8 @@
-package user
+package auth
 
 import (
 	"auth/internal/jwt"
+	"auth/internal/user"
 	"auth/proto/gen"
 	"context"
 	"github.com/sirupsen/logrus"
@@ -18,11 +19,11 @@ type AuthService interface {
 type AuthServiceImpl struct {
 	gen.UnimplementedAuthServiceServer
 	jwtUtil  jwt.JWTUtil
-	userRepo UserRepository
+	userRepo user.UserRepository
 	log      *logrus.Logger
 }
 
-func NewAuthService(jwtUtil jwt.JWTUtil, userRepo UserRepository, log *logrus.Logger) *AuthServiceImpl {
+func NewAuthService(jwtUtil jwt.JWTUtil, userRepo user.UserRepository, log *logrus.Logger) *AuthServiceImpl {
 	return &AuthServiceImpl{
 		jwtUtil:  jwtUtil,
 		userRepo: userRepo,
@@ -31,7 +32,7 @@ func NewAuthService(jwtUtil jwt.JWTUtil, userRepo UserRepository, log *logrus.Lo
 }
 
 func (s *AuthServiceImpl) RegisterUser(ctx context.Context, req *gen.RegisterUserRequest) (*gen.RegisterUserResponse, error) {
-	user := User{Username: req.Username, Password: req.Password}
+	user := user.User{Username: req.Username, Password: req.Password}
 
 	// Check for existing user
 	if err := s.handleExistingUser(ctx, user.Username); err != nil {
@@ -57,7 +58,6 @@ func (s *AuthServiceImpl) RegisterUser(ctx context.Context, req *gen.RegisterUse
 		return nil, status.Errorf(codes.Internal, "failed to create user: %v", err)
 	}
 
-	s.log.WithField("username", user.Username).Info("user registered successfully")
 	return &gen.RegisterUserResponse{Token: token}, nil
 }
 
