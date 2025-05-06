@@ -1,11 +1,13 @@
 syntax = "proto3";
 package wallet;
 option go_package = "./proto";
+import "google/protobuf/empty.proto";
 
 service WalletService {
   rpc CreateWallet (CreateWalletRequest) returns (CreateWalletResponse);
   rpc ViewBalance (ViewBalanceRequest) returns (ViewBalanceResponse);
   rpc IsWalletOwner (IsOwnerRequest) returns (IsOwnerResponse);
+  rpc HealthCheck (google.protobuf.Empty) returns (google.protobuf.Empty);
 }
 
 message ViewBalanceRequest{

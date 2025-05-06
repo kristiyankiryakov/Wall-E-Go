@@ -77,6 +77,9 @@ func setupRouter(
 	// API versioning
 	v1 := router.Group("/api/v1")
 	{
+		//Health checks
+		v1.GET("/health/wallet", handlers.Wallet.HealthCheck)
+
 		// Auth routes
 		auth := v1.Group("/auth")
 		{
@@ -86,6 +89,7 @@ func setupRouter(
 
 		// Protected routes
 		protected := v1.Group("")
+
 		protected.Use(middleware.Auth.AuthenticateUser(), middleware.Auth.AppendUserIDToGrpcContext())
 		{
 			protected.POST("/wallet", handlers.Wallet.CreateWallet)

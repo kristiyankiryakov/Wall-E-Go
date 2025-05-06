@@ -15,35 +15,17 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-//type AuthMiddleware interface {
-//	AuthenticateWalletOwner(walletClient *clients.WalletClient) gin.HandlerFunc
-//	AppendUserIDToGrpcContext() gin.HandlerFunc
-//	AuthenticateUser() gin.HandlerFunc
-//}
-
 type AuthMiddleware interface {
 	AuthenticateWalletOwner() gin.HandlerFunc
 	AppendUserIDToGrpcContext() gin.HandlerFunc
 	AuthenticateUser() gin.HandlerFunc
 }
 
-//type AuthMiddleWareImpl struct {
-//	Config       *config.Servercfg
-//	WalletClient *clients.WalletClient
-//}
-
 type AuthMiddlewareImpl struct {
 	config       *config.ServerCfg
 	walletClient *clients.WalletClient
 	log          *logrus.Logger
 }
-
-//func NewAuthMiddleware(config *config.Servercfg, walletClient *clients.WalletClient) AuthMiddleware {
-//	return &AuthMiddleWareImpl{
-//		Config:       config,
-//		WalletClient: walletClient,
-//	}
-//}
 
 func NewAuthMiddleware(config *config.ServerCfg, walletClient *clients.WalletClient, log *logrus.Logger) AuthMiddleware {
 	return &AuthMiddlewareImpl{
@@ -52,46 +34,6 @@ func NewAuthMiddleware(config *config.ServerCfg, walletClient *clients.WalletCli
 		log:          log,
 	}
 }
-
-//func (m *AuthMiddleWareImpl) AuthenticateWalletOwner(walletClient *clients.WalletClient) gin.HandlerFunc {
-//	return func(c *gin.Context) {
-//		bearerToken := c.Request.Header.Get("Authorization")
-//		if bearerToken == "" {
-//			c.JSON(http.StatusUnauthorized, gin.H{"error": "missing token"})
-//			c.Abort()
-//			return
-//		}
-//
-//		var token string
-//		if len(bearerToken) > 7 && bearerToken[:7] == "Bearer " {
-//			token = bearerToken[7:]
-//		}
-//
-//		userID, err := m.validateToken(token) // Local JWT parsing
-//		if err != nil {
-//			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
-//			c.Abort()
-//			return
-//		}
-//
-//		var req models.TransactionRequest
-//		if err := c.ShouldBindJSON(&req); err != nil {
-//			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("invalid request: %v", err)})
-//			c.Abort()
-//			return
-//		}
-//
-//		if ok, err := walletClient.IsWalletOwner(c, int64(userID), req.WalletID); !ok {
-//			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-//			c.Abort()
-//			return
-//		}
-//
-//		c.Set("transactionRequest", req)
-//		c.Set("userID", userID)
-//		c.Next()
-//	}
-//}
 
 func (m *AuthMiddlewareImpl) AuthenticateWalletOwner() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -125,38 +67,6 @@ func (m *AuthMiddlewareImpl) AuthenticateWalletOwner() gin.HandlerFunc {
 	}
 }
 
-//func (m *AuthMiddleWareImpl) AppendUserIDToGrpcContext() gin.HandlerFunc {
-//	return func(c *gin.Context) {
-//		userID, exists := c.Get("userID")
-//		if !exists || userID == "" {
-//			c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
-//			c.Abort()
-//			return
-//		}
-//
-//		// Convert userID to string based on its actual type
-//		var userIDStr string
-//		switch v := userID.(type) {
-//		case int:
-//			userIDStr = strconv.Itoa(v)
-//		case int64:
-//			userIDStr = strconv.FormatInt(v, 10)
-//		case string:
-//			userIDStr = v
-//		default:
-//			log.Printf("Unsupported userID type: %T", userID)
-//			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user ID format"})
-//			c.Abort()
-//			return
-//		}
-//
-//		// Create context with userID metadata
-//		ctx := metadata.AppendToOutgoingContext(c.Request.Context(), "userID", userIDStr)
-//		c.Request = c.Request.WithContext(ctx)
-//		c.Next()
-//	}
-//}
-
 func (m *AuthMiddlewareImpl) AppendUserIDToGrpcContext() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID, exists := c.Get("userID")
@@ -181,31 +91,6 @@ func (m *AuthMiddlewareImpl) AppendUserIDToGrpcContext() gin.HandlerFunc {
 		c.Next()
 	}
 }
-
-//func (m *AuthMiddleWareImpl) AuthenticateUser() gin.HandlerFunc {
-//	return func(c *gin.Context) {
-//		bearerToken := c.Request.Header.Get("Authorization")
-//		if bearerToken == "" {
-//			c.JSON(http.StatusUnauthorized, gin.H{"error": "missing token"})
-//			return
-//		}
-//
-//		var token string
-//		if len(bearerToken) > 7 && bearerToken[:7] == "Bearer " {
-//			token = bearerToken[7:]
-//		}
-//
-//		userID, err := m.validateToken(token) // Local JWT parsing
-//		if err != nil {
-//			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
-//			c.Abort()
-//			return
-//		}
-//
-//		c.Set("userID", userID)
-//		c.Next()
-//	}
-//}
 
 func (m *AuthMiddlewareImpl) AuthenticateUser() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -304,44 +189,3 @@ func (m *AuthMiddlewareImpl) convertUserIDToString(userID interface{}) (string, 
 		return "", fmt.Errorf("unsupported userID type: %T", userID)
 	}
 }
-
-//func (m *AuthMiddleWareImpl) validateToken(token string) (int, error) {
-//	claims := &jwt.MapClaims{}
-//	parsedToken, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
-//		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-//			return nil, errors.New("unexpected signing method")
-//		}
-//		return []byte(m.Config.JWTSecret), nil
-//	})
-//
-//	if err != nil {
-//		log.Println("Parse error:", err)
-//		return 0, err
-//	}
-//
-//	if !parsedToken.Valid {
-//		log.Println("Token invalid")
-//		return 0, errors.New("invalid token")
-//	}
-//
-//	sub, ok := (*claims)["sub"]
-//	if !ok {
-//		log.Println("Missing sub claim")
-//		return 0, errors.New("missing subject claim")
-//	}
-//
-//	switch v := sub.(type) {
-//	case float64:
-//		return int(v), nil
-//	case string:
-//		userID, err := strconv.Atoi(v)
-//		if err != nil {
-//			log.Println("String conversion error:", err)
-//			return 0, errors.New("invalid user_id format")
-//		}
-//		return userID, nil
-//	default:
-//		log.Println("Unexpected sub type:", fmt.Sprintf("%T", v))
-//		return 0, errors.New("invalid user_id type")
-//	}
-//}

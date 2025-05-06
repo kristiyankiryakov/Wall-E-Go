@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	"google.golang.org/grpc"
 )
@@ -21,7 +22,10 @@ func NewWalletClient(addr string, log *logrus.Logger) (*WalletClient, error) {
 		log.WithError(err).Error("Failed to connect to auth service")
 		return nil, fmt.Errorf("failed to connect to auth service: %w", err)
 	}
-	return &WalletClient{client: gen.NewWalletServiceClient(conn)}, nil
+	return &WalletClient{
+		client: gen.NewWalletServiceClient(conn),
+		log:    log,
+	}, nil
 }
 
 func (c *WalletClient) CreateWallet(ctx context.Context, walletName string) (string, error) {
@@ -65,4 +69,14 @@ func (c *WalletClient) IsWalletOwner(ctx context.Context, userID int64, walletID
 	}
 
 	return resp.GetValid(), nil
+}
+
+func (c *WalletClient) HealthCheck(ctx context.Context, empty *emptypb.Empty) error {
+	c.log.Debug("Checking wallet service health")
+	_, err := c.client.HealthCheck(ctx, empty)
+	if err != nil {
+		c.log.WithError(err).Error("Failed to check wallet service health")
+		return fmt.Errorf("failed to check wallet service health: %w", err)
+	}
+	return nil
 }

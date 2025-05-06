@@ -3,6 +3,7 @@ package handlers
 import (
 	"broker/internal/clients"
 	"broker/internal/utils"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -11,6 +12,7 @@ import (
 type WalletHandler interface {
 	CreateWallet(c *gin.Context)
 	ViewBalance(c *gin.Context)
+	HealthCheck(c *gin.Context)
 }
 
 type WalletHandlerImpl struct {
@@ -59,4 +61,16 @@ func (h *WalletHandlerImpl) ViewBalance(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, response)
+}
+
+func (h *WalletHandlerImpl) HealthCheck(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	err := h.walletClient.HealthCheck(ctx, &emptypb.Empty{})
+	if err != nil {
+		utils.HandleGRPCError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "healthy"})
 }

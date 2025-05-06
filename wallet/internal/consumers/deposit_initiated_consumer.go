@@ -2,9 +2,10 @@ package consumers
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"log"
 	"time"
 	"wallet/internal/events"
@@ -30,13 +31,13 @@ type Config struct {
 
 type Consumer struct {
 	reader          *kafka.Reader
-	db              *sql.DB
+	db              *pgxpool.Pool
 	depositProducer producers.DepositCompletedProducer
 	notifyProducer  producers.NotificationProducer
 	batchSize       int
 }
 
-func NewConsumer(db *sql.DB, cfg *Config, depositProducer producers.DepositCompletedProducer, notifyProducer producers.NotificationProducer) *Consumer {
+func NewConsumer(db *pgxpool.Pool, cfg *Config, depositProducer producers.DepositCompletedProducer, notifyProducer producers.NotificationProducer) *Consumer {
 	return &Consumer{
 		reader: kafka.NewReader(kafka.ReaderConfig{
 			Brokers:        cfg.Brokers,
@@ -129,7 +130,7 @@ func (c *Consumer) processBatch(ctx context.Context, messages []kafka.Message) (
 	}
 
 	// Start a database transaction
-	tx, err := c.db.BeginTx(ctx, nil)
+	tx, err := c.db.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		log.Printf("Failed to begin transaction: %v", err)
 		return nil, nil
@@ -146,7 +147,7 @@ func (c *Consumer) processBatch(ctx context.Context, messages []kafka.Message) (
 		}
 
 		// Update wallet balance
-		_, err = tx.ExecContext(ctx, "UPDATE wallets SET balance = balance + $1 WHERE id = $2", event.Amount, event.WalletID)
+		_, err = tx.Exec(ctx, "UPDATE wallets SET balance = balance + $1 WHERE id = $2", event.Amount, event.WalletID)
 		if err != nil {
 			log.Printf("Failed to update balance for transaction %s: %v", event.TransactionID, err)
 			continue
@@ -166,9 +167,9 @@ func (c *Consumer) processBatch(ctx context.Context, messages []kafka.Message) (
 	}
 
 	// Commit transaction
-	if err := tx.Commit(); err != nil {
+	if err := tx.Commit(ctx); err != nil {
 		log.Printf("Failed to commit transaction: %v", err)
-		tx.Rollback()
+		tx.Rollback(ctx)
 		return nil, nil
 	}
 

@@ -1,11 +1,11 @@
-package services
+package wallet
 
 import (
 	"context"
+	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"log"
 	"strconv"
-	"wallet/internal/domain/entities"
-	"wallet/internal/domain/repositories"
 	"wallet/proto/gen"
 
 	"wallet/internal/jwt"
@@ -20,23 +20,31 @@ type WalletService interface {
 	ViewBalance(ctx context.Context, req *gen.ViewBalanceRequest) (*gen.ViewBalanceResponse, error)
 
 	IsWalletOwner(ctx context.Context, req *gen.IsOwnerRequest) (*gen.IsOwnerResponse, error)
+	HealthCheck(ctx context.Context, req *emptypb.Empty) (*emptypb.Empty, error)
 }
 
 type WalletServiceImpl struct {
 	gen.UnimplementedWalletServiceServer
-	walletRepo repositories.WalletRepository
+	walletRepo WalletRepository
 	jwtUtil    jwt.JWTUtil
+	log        *logrus.Logger
 }
 
-func NewWalletService(walletRepo repositories.WalletRepository, jwtUtil jwt.JWTUtil) *WalletServiceImpl {
+func NewWalletService(walletRepo WalletRepository, jwtUtil jwt.JWTUtil, log *logrus.Logger) *WalletServiceImpl {
 	return &WalletServiceImpl{
 		walletRepo: walletRepo,
 		jwtUtil:    jwtUtil,
+		log:        log,
 	}
 }
 
+func (s *WalletServiceImpl) HealthCheck(ctx context.Context, req *emptypb.Empty) (*emptypb.Empty, error) {
+	s.log.Info("Health check called")
+	return req, nil
+}
+
 func (s *WalletServiceImpl) CreateWallet(ctx context.Context, req *gen.CreateWalletRequest) (*gen.CreateWalletResponse, error) {
-	var newWallet entities.Wallet
+	var newWallet Wallet
 	userID, err := s.extractUserIDFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -95,7 +103,7 @@ func (s *WalletServiceImpl) IsWalletOwner(ctx context.Context, req *gen.IsOwnerR
 	}, nil
 }
 
-func (s *WalletServiceImpl) getWalletByUserAndWalletID(userID int64, walletID string) (*entities.Wallet, error) {
+func (s *WalletServiceImpl) getWalletByUserAndWalletID(userID int64, walletID string) (*Wallet, error) {
 	wallet, err := s.walletRepo.GetByUserIdAndWalletID(userID, walletID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "error getting wallet: %v", err)

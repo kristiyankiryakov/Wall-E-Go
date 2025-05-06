@@ -18,6 +18,8 @@ func NewServeCmd() *cobra.Command {
 		Use:   "serve",
 		Short: "Start the API gateway server",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			//ctx := context.Background()
+
 			if err := godotenv.Load(); err != nil {
 				return fmt.Errorf("failed to load .env file: %w", err)
 			}

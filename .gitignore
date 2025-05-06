@@ -33,3 +33,4 @@ go.work.sum
 # env file
 .env
 logs
+loki-data

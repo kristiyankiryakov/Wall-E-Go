@@ -1,38 +1,41 @@
-package repositories
+package wallet
 
 import (
 	"context"
-	"database/sql"
-	"log"
+	"errors"
+	"fmt"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"time"
-	"wallet/internal/domain/entities"
 )
 
 const DB_TIMEOUT = time.Second * 10
 
 type WalletRepository interface {
-	CreateWallet(wallet entities.Wallet) (string, error)
-	GetByUserIdAndWalletName(user_id int64, walletName string) (*entities.Wallet, error)
-	GetByUserIdAndWalletID(user_id int64, walletID string) (*entities.Wallet, error)
+	CreateWallet(wallet Wallet) (string, error)
+	GetByUserIdAndWalletName(user_id int64, walletName string) (*Wallet, error)
+	GetByUserIdAndWalletID(user_id int64, walletID string) (*Wallet, error)
 }
 
 type PostgresWalletRepository struct {
-	db *sql.DB
+	db *pgxpool.Pool
 }
 
-func NewPostgresWalletRepository(db *sql.DB) *PostgresWalletRepository {
-	return &PostgresWalletRepository{db: db}
+func NewPostgresWalletRepository(db *pgxpool.Pool) *PostgresWalletRepository {
+	return &PostgresWalletRepository{
+		db: db,
+	}
 }
 
 // GetByUserIDAndWalletName returns one wallet by wallet Name and UserID
-func (r *PostgresWalletRepository) GetByUserIdAndWalletName(user_id int64, walletName string) (*entities.Wallet, error) {
+func (r *PostgresWalletRepository) GetByUserIdAndWalletName(userID int64, walletName string) (*Wallet, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), DB_TIMEOUT)
 	defer cancel()
 
 	query := `select * from wallets where user_id = $1 AND name = $2`
 
-	var wallet entities.Wallet
-	row := r.db.QueryRowContext(ctx, query, user_id, walletName)
+	var wallet Wallet
+	row := r.db.QueryRow(ctx, query, userID, walletName)
 
 	err := row.Scan(
 		&wallet.ID,
@@ -43,23 +46,22 @@ func (r *PostgresWalletRepository) GetByUserIdAndWalletName(user_id int64, walle
 		&wallet.UpdatedAt,
 	)
 
-	if err != nil && err != sql.ErrNoRows {
-		log.Println(err)
-		return nil, err
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return nil, fmt.Errorf("failed to get wallet: %w", err)
 	}
 
 	return &wallet, nil
 }
 
 // GetByUserIdAndWalletID returns one wallet by wallet ID and UserID
-func (r *PostgresWalletRepository) GetByUserIdAndWalletID(user_id int64, walletID string) (*entities.Wallet, error) {
+func (r *PostgresWalletRepository) GetByUserIdAndWalletID(userID int64, walletID string) (*Wallet, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), DB_TIMEOUT)
 	defer cancel()
 
 	query := `select * from wallets where user_id = $1 AND id = $2`
 
-	var wallet entities.Wallet
-	row := r.db.QueryRowContext(ctx, query, user_id, walletID)
+	var wallet Wallet
+	row := r.db.QueryRow(ctx, query, userID, walletID)
 
 	err := row.Scan(
 		&wallet.ID,
@@ -70,15 +72,14 @@ func (r *PostgresWalletRepository) GetByUserIdAndWalletID(user_id int64, walletI
 		&wallet.UpdatedAt,
 	)
 
-	if err != nil && err != sql.ErrNoRows {
-		log.Println(err)
-		return nil, err
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return nil, fmt.Errorf("failed to get wallet: %w", err)
 	}
 
 	return &wallet, nil
 }
 
-func (r *PostgresWalletRepository) CreateWallet(wallet entities.Wallet) (string, error) {
+func (r *PostgresWalletRepository) CreateWallet(wallet Wallet) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), DB_TIMEOUT)
 	defer cancel()
 
@@ -86,7 +87,7 @@ func (r *PostgresWalletRepository) CreateWallet(wallet entities.Wallet) (string,
 		values ($1, $2, $3, $4) returning id`
 
 	var newID string
-	err := r.db.QueryRowContext(ctx, query,
+	err := r.db.QueryRow(ctx, query,
 		wallet.UserID,
 		wallet.Name,
 		wallet.CreatedAt,
@@ -94,8 +95,7 @@ func (r *PostgresWalletRepository) CreateWallet(wallet entities.Wallet) (string,
 	).Scan(&newID)
 
 	if err != nil {
-		log.Println(err)
-		return "", err
+		return "", fmt.Errorf("failed to create wallet: %w", err)
 	}
 
 	return newID, nil
