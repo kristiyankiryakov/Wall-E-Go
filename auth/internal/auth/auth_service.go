@@ -93,5 +93,7 @@ func (s *AuthServiceImpl) Authenticate(ctx context.Context, req *gen.Authenticat
 	}
 
 	s.log.WithField("username", existingUser.Username).Info("user authenticated successfully")
-	return &gen.AuthenticateResponse{Token: token}, nil
+	return &gen.AuthenticateResponse{
+		Token: token,
+	}, nil
 }

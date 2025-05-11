@@ -6,7 +6,7 @@ import (
 
 type Wallet struct {
 	ID        string
-	UserID    int64
+	UserID    int
 	Name      string
 	Balance   float64
 	CreatedAt time.Time

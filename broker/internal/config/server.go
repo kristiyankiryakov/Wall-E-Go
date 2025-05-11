@@ -6,6 +6,7 @@ import (
 )
 
 type ServerCfg struct {
+	ListenHost string `default:"localhost" envconfig:"LISTEN_HOST"`
 	// ListenPort is the port where the server listens for incoming requests.
 	ListenPort string `default:"8080" envconfig:"LISTEN_PORT"`
 

@@ -3,14 +3,13 @@ package handlers
 import (
 	"broker/internal/clients"
 	"broker/internal/utils"
+	"encoding/json"
 	"net/http"
-
-	"github.com/gin-gonic/gin"
 )
 
 type AuthHandler interface {
-	Register(c *gin.Context)
-	Authenticate(c *gin.Context)
+	Register(w http.ResponseWriter, r *http.Request)
+	Authenticate(w http.ResponseWriter, r *http.Request)
 }
 
 type AuthHandlerImpl struct {
@@ -23,38 +22,60 @@ func NewAuthHandler(authClient *clients.AuthClient) *AuthHandlerImpl {
 	}
 }
 
-func (h *AuthHandlerImpl) Register(c *gin.Context) {
+func (h *AuthHandlerImpl) Register(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.Respond(w, http.StatusBadRequest, "invalid request", nil, err)
 		return
 	}
 
 	token, err := h.authClient.RegisterUser(req.Username, req.Password)
 	if err != nil {
-		utils.HandleGRPCError(c, err)
+		utils.HandleGRPCError(w, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"token": token})
+
+	utils.Respond(
+		w,
+		http.StatusOK,
+		"user registered successfully",
+		map[string]string{
+			"token": token,
+		},
+		nil,
+	)
+	return
 }
 
-func (h *AuthHandlerImpl) Authenticate(c *gin.Context) {
+func (h *AuthHandlerImpl) Authenticate(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.Respond(w, http.StatusBadRequest, "invalid request", nil, err)
 		return
 	}
 
 	token, err := h.authClient.Authenticate(req.Username, req.Password)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		utils.HandleGRPCError(w, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"token": token})
+
+	utils.Respond(
+		w,
+		http.StatusOK,
+		"user authenticated successfully",
+		map[string]string{
+			"token": token,
+		},
+		nil,
+	)
+	return
 }

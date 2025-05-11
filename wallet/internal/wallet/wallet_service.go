@@ -3,57 +3,65 @@ package wallet
 import (
 	"context"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"log"
 	"strconv"
 	"wallet/proto/gen"
 
-	"wallet/internal/jwt"
-
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
-type WalletService interface {
+type Service interface {
 	CreateWallet(ctx context.Context, req *gen.CreateWalletRequest) (*gen.CreateWalletResponse, error)
 	ViewBalance(ctx context.Context, req *gen.ViewBalanceRequest) (*gen.ViewBalanceResponse, error)
-
-	IsWalletOwner(ctx context.Context, req *gen.IsOwnerRequest) (*gen.IsOwnerResponse, error)
 	HealthCheck(ctx context.Context, req *emptypb.Empty) (*emptypb.Empty, error)
 }
 
-type WalletServiceImpl struct {
+type service struct {
 	gen.UnimplementedWalletServiceServer
-	walletRepo WalletRepository
-	jwtUtil    jwt.JWTUtil
-	log        *logrus.Logger
+	repo Repository
+	log  *logrus.Logger
 }
 
-func NewWalletService(walletRepo WalletRepository, jwtUtil jwt.JWTUtil, log *logrus.Logger) *WalletServiceImpl {
-	return &WalletServiceImpl{
-		walletRepo: walletRepo,
-		jwtUtil:    jwtUtil,
-		log:        log,
+func NewWalletService(repo Repository, log *logrus.Logger) *service {
+	return &service{
+		repo: repo,
+		log:  log,
 	}
 }
 
-func (s *WalletServiceImpl) HealthCheck(ctx context.Context, req *emptypb.Empty) (*emptypb.Empty, error) {
+func (s *service) HealthCheck(ctx context.Context, req *emptypb.Empty) (*emptypb.Empty, error) {
 	s.log.Info("Health check called")
 	return req, nil
 }
 
-func (s *WalletServiceImpl) CreateWallet(ctx context.Context, req *gen.CreateWalletRequest) (*gen.CreateWalletResponse, error) {
+func (s *service) CreateWallet(ctx context.Context, req *gen.CreateWalletRequest) (*gen.CreateWalletResponse, error) {
 	var newWallet Wallet
-	userID, err := s.extractUserIDFromContext(ctx)
+
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		s.log.Error("no metadata provided in context")
+		return nil, status.Error(codes.Unauthenticated, "no metadata provided")
+	}
+
+	userIDStr := md.Get("userID")
+	if len(userIDStr) == 0 {
+		s.log.Error("user ID not found in metadata")
+		return nil, status.Error(codes.Unauthenticated, "user ID not found in metadata")
+	}
+
+	userID, err := strconv.Atoi(userIDStr[0])
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, "invalid user ID")
 	}
 
 	// Check if wallet with such name already exists for this user
-	existingWallet, err := s.walletRepo.GetByUserIdAndWalletName(userID, req.Name)
+	existingWallet, err := s.repo.GetByUserIdAndWalletName(ctx, userID, req.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error checking for duplicate wallet: %v", err)
+		s.log.Errorf("error checking for duplicate wallet: %v", err)
+		return nil, status.Errorf(codes.Internal, "error handling create wallet request")
 	}
 	if existingWallet.ID != "" {
 		return nil, status.Errorf(codes.AlreadyExists, "wallet with name %v already exists for user with ID: %v", req.Name, userID)
@@ -62,9 +70,10 @@ func (s *WalletServiceImpl) CreateWallet(ctx context.Context, req *gen.CreateWal
 	newWallet.Name = req.Name
 	newWallet.UserID = userID
 
-	walletID, err := s.walletRepo.CreateWallet(newWallet)
+	walletID, err := s.repo.CreateWallet(ctx, &newWallet)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error creating a wallet: %v", err)
+		s.log.Errorf("error creating wallet: %v", err)
+		return nil, status.Errorf(codes.Internal, "error creating a wallet")
 	}
 
 	return &gen.CreateWalletResponse{
@@ -72,13 +81,14 @@ func (s *WalletServiceImpl) CreateWallet(ctx context.Context, req *gen.CreateWal
 	}, nil
 }
 
-func (s *WalletServiceImpl) ViewBalance(ctx context.Context, req *gen.ViewBalanceRequest) (*gen.ViewBalanceResponse, error) {
-	userID, err := s.extractUserIDFromContext(ctx)
-	if err != nil {
-		return nil, err
+func (s *service) ViewBalance(ctx context.Context, req *gen.ViewBalanceRequest) (*gen.ViewBalanceResponse, error) {
+	log.Println("CreateWallet called with request: ", req, " and context: ", ctx)
+	userID, ok := ctx.Value("userID").(int)
+	if !ok {
+		return nil, status.Errorf(codes.Unauthenticated, "user ID not found in context")
 	}
 
-	wallet, err := s.getWalletByUserAndWalletID(userID, req.WalletId)
+	wallet, err := s.repo.GetByUserIdAndWalletID(ctx, userID, req.WalletId)
 	if err != nil {
 		return nil, err
 	}
@@ -87,47 +97,4 @@ func (s *WalletServiceImpl) ViewBalance(ctx context.Context, req *gen.ViewBalanc
 		Balance: wallet.Balance,
 		Name:    wallet.Name,
 	}, nil
-
-}
-
-func (s *WalletServiceImpl) IsWalletOwner(ctx context.Context, req *gen.IsOwnerRequest) (*gen.IsOwnerResponse, error) {
-	wallet, err := s.getWalletByUserAndWalletID(req.GetUserId(), req.GetWalletId())
-	if err != nil {
-		return nil, err
-	}
-
-	isValid := wallet != nil
-
-	return &gen.IsOwnerResponse{
-		Valid: isValid,
-	}, nil
-}
-
-func (s *WalletServiceImpl) getWalletByUserAndWalletID(userID int64, walletID string) (*Wallet, error) {
-	wallet, err := s.walletRepo.GetByUserIdAndWalletID(userID, walletID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error getting wallet: %v", err)
-	}
-
-	if wallet.ID == "" {
-		return nil, status.Errorf(codes.NotFound, "wallet with id: %v does not exists", walletID)
-	}
-
-	return wallet, nil
-}
-
-func (s *WalletServiceImpl) extractUserIDFromContext(ctx context.Context) (int64, error) {
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		log.Println("err metadata receive")
-		return 0, status.Errorf(codes.Internal, "error receiving metadata")
-	}
-	extracted := md.Get("userID")[0]
-	userID, err := strconv.Atoi(extracted)
-	if err != nil {
-		log.Println(err)
-		return 0, status.Errorf(codes.Internal, "error converting userID's type")
-	}
-
-	return int64(userID), nil
 }

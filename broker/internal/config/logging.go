@@ -11,5 +11,5 @@ type Log struct {
 	ExcludePaths []string `default:"/live" envconfig:"LOG_EXCLUDE_PATHS"`
 
 	// FilePath is the path to the log file.
-	FilePath string `default:"../logs/auth.log" envconfig:"LOG_FILE_PATH"`
+	FilePath string `default:"../logs/broker.log" envconfig:"LOG_FILE_PATH"`
 }

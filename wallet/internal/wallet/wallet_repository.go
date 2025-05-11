@@ -6,35 +6,33 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"time"
+	"github.com/sirupsen/logrus"
 )
 
-const DB_TIMEOUT = time.Second * 10
-
-type WalletRepository interface {
-	CreateWallet(wallet Wallet) (string, error)
-	GetByUserIdAndWalletName(user_id int64, walletName string) (*Wallet, error)
-	GetByUserIdAndWalletID(user_id int64, walletID string) (*Wallet, error)
+type Repository interface {
+	CreateWallet(ctx context.Context, wallet *Wallet) (string, error)
+	GetByUserIdAndWalletName(ctx context.Context, userID int, walletName string) (*Wallet, error)
+	GetByUserIdAndWalletID(ctx context.Context, userID int, walletID string) (*Wallet, error)
 }
 
 type PostgresWalletRepository struct {
-	db *pgxpool.Pool
+	db  *pgxpool.Pool
+	log *logrus.Logger
 }
 
-func NewPostgresWalletRepository(db *pgxpool.Pool) *PostgresWalletRepository {
+func NewPostgresWalletRepository(db *pgxpool.Pool, log *logrus.Logger) *PostgresWalletRepository {
 	return &PostgresWalletRepository{
-		db: db,
+		db:  db,
+		log: log,
 	}
 }
 
-// GetByUserIDAndWalletName returns one wallet by wallet Name and UserID
-func (r *PostgresWalletRepository) GetByUserIdAndWalletName(userID int64, walletName string) (*Wallet, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), DB_TIMEOUT)
-	defer cancel()
-
+// GetByUserIdAndWalletName returns one wallet by wallet name and UserID
+func (r *PostgresWalletRepository) GetByUserIdAndWalletName(ctx context.Context, userID int, walletName string) (*Wallet, error) {
 	query := `select * from wallets where user_id = $1 AND name = $2`
 
 	var wallet Wallet
+
 	row := r.db.QueryRow(ctx, query, userID, walletName)
 
 	err := row.Scan(
@@ -54,10 +52,7 @@ func (r *PostgresWalletRepository) GetByUserIdAndWalletName(userID int64, wallet
 }
 
 // GetByUserIdAndWalletID returns one wallet by wallet ID and UserID
-func (r *PostgresWalletRepository) GetByUserIdAndWalletID(userID int64, walletID string) (*Wallet, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), DB_TIMEOUT)
-	defer cancel()
-
+func (r *PostgresWalletRepository) GetByUserIdAndWalletID(ctx context.Context, userID int, walletID string) (*Wallet, error) {
 	query := `select * from wallets where user_id = $1 AND id = $2`
 
 	var wallet Wallet
@@ -79,10 +74,8 @@ func (r *PostgresWalletRepository) GetByUserIdAndWalletID(userID int64, walletID
 	return &wallet, nil
 }
 
-func (r *PostgresWalletRepository) CreateWallet(wallet Wallet) (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), DB_TIMEOUT)
-	defer cancel()
-
+// CreateWallet creates a new wallet in the database
+func (r *PostgresWalletRepository) CreateWallet(ctx context.Context, wallet *Wallet) (string, error) {
 	query := `insert into wallets (user_id, name, created_at, updated_at)
 		values ($1, $2, $3, $4) returning id`
 

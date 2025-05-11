@@ -4,12 +4,13 @@ import (
 	"broker/internal/clients"
 	"broker/internal/config"
 	"broker/internal/handlers"
-	"broker/internal/middleware"
+	"broker/internal/middlewares"
 	"fmt"
-
-	"github.com/gin-gonic/gin"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
 	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
+	"net/http"
 )
 
 // NewServeCmd creates the serve command
@@ -44,31 +45,50 @@ func NewServeCmd() *cobra.Command {
 				return fmt.Errorf("failed to create wallet client: %w", err)
 			}
 
-			transactionClient, err := clients.NewTransactionClient(cfg.TransactionHost, log)
-			if err != nil {
-				log.WithError(err).Error("Failed to create transaction client")
-				return fmt.Errorf("failed to create transaction client: %w", err)
-			}
+			//transactionClient, err := clients.NewTransactionClient(cfg.TransactionHost, log)
+			//if err != nil {
+			//	log.WithError(err).Error("Failed to create transaction client")
+			//	return fmt.Errorf("failed to create transaction client: %w", err)
+			//}
 
-			appHandlers := &AppHandlers{
-				Auth:        handlers.NewAuthHandler(authClient),
-				Wallet:      handlers.NewWalletHandler(walletClient),
-				Transaction: handlers.NewTransactionHandler(transactionClient),
-			}
+			// Initialize handlers
+			authHandler := handlers.NewAuthHandler(authClient)
+			walletHandler := handlers.NewWalletHandler(walletClient)
+			//transactionHandler := handlers.NewTransactionHandler(transactionClient)
 
-			appMiddleware := &AppMiddleware{
-				Auth: middleware.NewAuthMiddleware(cfg, walletClient, log),
-			}
+			// Initialize router
+			router := chi.NewRouter()
 
-			// Initialize Gin router
-			router := gin.Default()
-			setupRouter(router, appHandlers, appMiddleware)
+			router.Route("/api/v1", func(v1 chi.Router) {
+				v1.Use(middlewares.RequestID)
+				v1.Use(middlewares.Tracer)
+				v1.Use(middlewares.Logger(log))
 
-			log.Info("Starting server on port " + cfg.ListenPort)
-			if err := router.Run(":" + cfg.ListenPort); err != nil {
-				return fmt.Errorf("failed to run server: %w", err)
-			}
+				v1.Use(cors.Handler(cors.Options{
+					AllowedOrigins: []string{"*"},
+					AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+				}))
 
+				// Public routes
+				v1.Route("/auth", func(auth chi.Router) {
+					auth.Post("/login", authHandler.Authenticate)
+					auth.Post("/register", authHandler.Register)
+				})
+				v1.Route("/health", func(health chi.Router) {
+					health.Get("/wallet", walletHandler.HealthCheck)
+				})
+
+				v1.Route("/", func(protected chi.Router) {
+					protected.Use(middlewares.Authenticate(cfg.JWTSecret, log))
+
+					protected.Post("/wallet", walletHandler.CreateWallet)
+					protected.Get("/wallet", walletHandler.ViewBalance)
+				})
+			})
+
+			host := fmt.Sprintf(cfg.ListenHost + ":" + cfg.ListenPort)
+			log.Info("Starting server on addr: ", host)
+			err = http.ListenAndServe(host, router)
 			if err != nil {
 				log.WithError(err).Error("Failed to start server")
 				return fmt.Errorf("failed to start server: %w", err)

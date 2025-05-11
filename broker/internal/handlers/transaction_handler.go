@@ -3,7 +3,6 @@ package handlers
 import (
 	"broker/internal/clients"
 	"broker/internal/models"
-	"broker/internal/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -40,7 +39,7 @@ func (h *TransactionHandlerImpl) Deposit(c *gin.Context) {
 
 	txID, err := h.transactionClient.Deposit(ctx, req)
 	if err != nil {
-		utils.HandleGRPCError(c, err)
+		//utils.HandleGRPCError(c, err)
 		return
 	}
 

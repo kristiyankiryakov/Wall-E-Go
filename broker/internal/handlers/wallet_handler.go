@@ -2,17 +2,18 @@ package handlers
 
 import (
 	"broker/internal/clients"
+	"broker/internal/models"
 	"broker/internal/utils"
+	"encoding/json"
+	"errors"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"net/http"
-
-	"github.com/gin-gonic/gin"
 )
 
 type WalletHandler interface {
-	CreateWallet(c *gin.Context)
-	ViewBalance(c *gin.Context)
-	HealthCheck(c *gin.Context)
+	CreateWallet(w http.ResponseWriter, r *http.Request)
+	ViewBalance(w http.ResponseWriter, r *http.Request)
+	HealthCheck(w http.ResponseWriter, r *http.Request)
 }
 
 type WalletHandlerImpl struct {
@@ -25,52 +26,68 @@ func NewWalletHandler(walletClient *clients.WalletClient) *WalletHandlerImpl {
 	}
 }
 
-func (h *WalletHandlerImpl) CreateWallet(c *gin.Context) {
+func (h *WalletHandlerImpl) CreateWallet(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Name string `json:"name"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.Respond(w, http.StatusBadRequest, "invalid request", nil, err)
 		return
 	}
 
-	ctx := c.Request.Context()
-
-	walletID, err := h.walletClient.CreateWallet(ctx, req.Name)
+	walletID, err := h.walletClient.CreateWallet(r.Context(), req.Name)
 	if err != nil {
-		utils.HandleGRPCError(c, err)
+		utils.HandleGRPCError(w, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"wallet_id": walletID})
+	utils.Respond(
+		w,
+		http.StatusOK,
+		"wallet created successfully",
+		map[string]string{
+			"walletID": walletID,
+		},
+		nil,
+	)
+	return
 }
 
-func (h *WalletHandlerImpl) ViewBalance(c *gin.Context) {
-	walletID := c.Query("walletID")
+func (h *WalletHandlerImpl) ViewBalance(w http.ResponseWriter, r *http.Request) {
+	walletID := r.URL.Query().Get("walletID")
 	if walletID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "error handling walletID"})
+		utils.Respond(w, http.StatusBadRequest, "missing walletID", nil, errors.New("missing walletID"))
 		return
 	}
 
-	ctx := c.Request.Context()
-
-	response, err := h.walletClient.ViewBalance(ctx, walletID)
+	response, err := h.walletClient.ViewBalance(r.Context(), walletID)
 	if err != nil {
-		utils.HandleGRPCError(c, err)
+		utils.HandleGRPCError(w, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, response)
+	utils.Respond(
+		w,
+		http.StatusOK,
+		"wallet balance retrieved successfully",
+		models.ViewBalanceResponse{
+			Name:    response.Name,
+			Balance: response.Balance,
+		},
+		nil,
+	)
+	return
 }
 
-func (h *WalletHandlerImpl) HealthCheck(c *gin.Context) {
-	ctx := c.Request.Context()
+func (h *WalletHandlerImpl) HealthCheck(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 
 	err := h.walletClient.HealthCheck(ctx, &emptypb.Empty{})
 	if err != nil {
-		utils.HandleGRPCError(c, err)
+		utils.HandleGRPCError(w, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": "healthy"})
+	utils.Respond(w, http.StatusOK, "Wallet service is healthy", nil, nil)
 }

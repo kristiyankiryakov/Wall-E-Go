@@ -8,7 +8,6 @@ import (
 	"time"
 	"wallet/internal/config"
 	"wallet/internal/consumers"
-	"wallet/internal/jwt"
 	"wallet/internal/producers"
 	"wallet/internal/wallet"
 	pb "wallet/proto/gen"
@@ -48,9 +47,8 @@ func NewServeCmd() *cobra.Command {
 			log.Info("Successfully connected to postgres")
 
 			// Create dependencies
-			walletRepo := wallet.NewPostgresWalletRepository(pgPool)
-			jwtUtil := jwt.NewJWTUtil(cfg.JWTSecret)
-			walletSvc := wallet.NewWalletService(walletRepo, jwtUtil, log)
+			walletRepo := wallet.NewPostgresWalletRepository(pgPool, log)
+			walletSvc := wallet.NewWalletService(walletRepo, log)
 
 			// Initialize producers.
 			depositProducer := producers.NewDepositCompletedProducer("localhost:9092", "deposit_completed", 100, 20*time.Millisecond)
