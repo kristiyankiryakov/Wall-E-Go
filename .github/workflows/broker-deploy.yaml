@@ -23,6 +23,9 @@ jobs:
           cd broker
           docker build -t broker:${{ github.sha }} .
           minikube image load broker:${{ github.sha }}
+      - name: Update Deployment Image
+        run: |
+          sed -i '' "s|image: docker.io/library/broker:.*|image: docker.io/library/broker:${{ github.sha }}|" broker/.deployment/broker-deployment.yaml
       - name: Deploy Broker and Ingress
         run: |
           kubectl create configmap broker-config --from-file=broker/config.yaml || true
