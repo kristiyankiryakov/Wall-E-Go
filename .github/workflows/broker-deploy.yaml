@@ -15,11 +15,14 @@ jobs:
     runs-on: [self-hosted, macOS, ARM64]
     steps:
       - uses: actions/checkout@v3
+      - name: Check Minikube Status
+        run: |
+          minikube status
       - name: Build and Import Broker Image
         run: |
           cd broker
-          docker build -t broker:latest .
-          minikube image load broker:latest
+          docker build -t broker:${{ github.sha }} .
+          minikube image load broker:${{ github.sha }}
       - name: Deploy Broker and Ingress
         run: |
           kubectl create configmap broker-config --from-file=broker/config.yaml || true
