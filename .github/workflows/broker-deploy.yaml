@@ -18,7 +18,6 @@ jobs:
       - name: Build and Import Broker Image
         run: |
           cd broker
-          eval $(minikube docker-env)
           docker build -t broker:latest .
           minikube image load broker:latest
       - name: Deploy Broker and Ingress
