@@ -8,9 +8,10 @@ on:
       - 'auth/**'
       - 'auth/.deployment/**'
       - 'auth/migrations/**'
+  workflow_dispatch:
 jobs:
   deploy-auth:
-    if: github.event.pull_request.merged == true
+    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
     runs-on: [self-hosted, macOS, ARM64]
     steps:
       - uses: actions/checkout@v3
@@ -18,7 +19,7 @@ jobs:
         run: |
           cd auth
           docker build -t auth:latest .
-          k3d image import auth:latest -c mycluster
+          minikube image load auth:latest
       - name: Deploy Auth and Dependencies
         run: |
           kubectl apply -f auth/.deployment/auth-secrets.yaml

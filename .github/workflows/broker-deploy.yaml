@@ -1,4 +1,4 @@
-name: Deploy Broker Service to Local k3d Cluster
+name: Deploy Broker Service to Local Cluster
 on:
   pull_request:
     types: [closed]
@@ -8,17 +8,19 @@ on:
       - 'broker/**'
       - 'broker/.deployment/**'
       - 'broker/config.yaml'
+  workflow_dispatch:
 jobs:
   deploy-broker:
-    if: github.event.pull_request.merged == true
+    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
     runs-on: [self-hosted, macOS, ARM64]
     steps:
       - uses: actions/checkout@v3
       - name: Build and Import Broker Image
         run: |
           cd broker
+          eval $(minikube docker-env)
           docker build -t broker:latest .
-          k3d image import broker:latest -c mycluster
+          minikube image load broker:latest
       - name: Deploy Broker and Ingress
         run: |
           kubectl create configmap broker-config --from-file=broker/config.yaml || true
